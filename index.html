@@ -402,11 +402,6 @@
             animation: rotate 20s linear infinite;
         }
         
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
         .tooltip-container {
             position: relative;
             display: inline-block;
@@ -1072,17 +1067,6 @@
             100% { transform: scale(1); }
         }
         
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-        
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
         @keyframes glow {
             0%, 100% { box-shadow: 0 0 5px var(--primary); }
             50% { box-shadow: 0 0 20px var(--primary), 0 0 30px var(--primary); }
@@ -1108,10 +1092,6 @@
         
         .animate-bounce {
             animation: bounce 0.6s ease-in-out;
-        }
-        
-        .animate-pulse {
-            animation: pulse 2s infinite;
         }
         
         .animate-shake {
@@ -1463,11 +1443,6 @@
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
-        }
-        
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
         }
         
         .glass-3d-shapes {
@@ -2096,7 +2071,7 @@
         const config = window.ENV_CONFIG || {};
         
         if (!window.ENV_CONFIG) {
-            console.error('ОШИБКА: config.js не загружен! Скопируйте config.example.js в config.js');
+            console.error('ОШИБКА: config.js не загружен! Создайте файл config.js с конфигурацией.');
         }
         
         // Данные из config — без fallback (всё должно быть в config.js)
@@ -2225,6 +2200,11 @@
                 return Math.round(value);
             },
             
+            roundToDecimals(value, decimals = 1) {
+                const factor = Math.pow(10, decimals);
+                return Math.round(value * factor) / factor;
+            },
+            
             max(...values) {
                 return Math.max(...values);
             },
@@ -2245,89 +2225,6 @@
                 if (progress === 100) return '#10b981'; 
                 if (progress > 70) return '#f59e0b';  
                 return '#ef4444'; 
-            }
-        };
-        
-        // Утилита для Push-уведомлений браузера
-        const PushNotificationUtils = {
-            // Проверка поддержки уведомлений
-            isSupported() {
-                return 'Notification' in window;
-            },
-            
-            // Получение текущего разрешения
-            getPermission() {
-                if (!this.isSupported()) return 'unsupported';
-                return Notification.permission;
-            },
-            
-            // Запрос разрешения на уведомления
-            async requestPermission() {
-                if (!this.isSupported()) {
-                    return { granted: false, reason: 'unsupported' };
-                }
-                
-                if (Notification.permission === 'granted') {
-                    return { granted: true };
-                }
-                
-                if (Notification.permission === 'denied') {
-                    return { granted: false, reason: 'denied' };
-                }
-                
-                try {
-                    const permission = await Notification.requestPermission();
-                    return { granted: permission === 'granted', reason: permission };
-                } catch (error) {
-                    return { granted: false, reason: 'error' };
-                }
-            },
-            
-            // Отправка уведомления
-            async send(title, options = {}) {
-                if (!this.isSupported()) return false;
-                if (Notification.permission !== 'granted') return false;
-                
-                try {
-                    const notification = new Notification(title, {
-                        icon: 'https://i.pinimg.com/736x/6a/27/26/6a2626c7f2ab9d5e9b3a91626fcc3288.jpg',
-                        badge: 'https://i.pinimg.com/736x/6a/27/26/6a2626c7f2ab9d5e9b3a91626fcc3288.jpg',
-                        vibrate: [200, 100, 200],
-                        requireInteraction: false,
-                        ...options
-                    });
-                    
-                    // Автоматическое закрытие через 5 секунд
-                    setTimeout(() => notification.close(), 5000);
-                    
-                    return true;
-                } catch (error) {
-                    return false;
-                }
-            },
-            
-            // Уведомление о выполнении плана
-            async notifyPlanCompleted(managerName, ftdCount, goal) {
-                return this.send(
-                    '🎉 План выполнен!',
-                    {
-                        body: `${managerName} выполнил план: ${ftdCount}/${goal} FTD`,
-                        tag: `plan-completed-${managerName}`,
-                        renotify: true
-                    }
-                );
-            },
-            
-            // Уведомление о приближении к плану
-            async notifyPlanProgress(managerName, ftdCount, goal, percent) {
-                return this.send(
-                    '📈 Прогресс по плану',
-                    {
-                        body: `${managerName}: ${ftdCount}/${goal} FTD (${percent}%)`,
-                        tag: `plan-progress-${managerName}`,
-                        renotify: false
-                    }
-                );
             }
         };
         
@@ -2566,12 +2463,6 @@
             paddingLarge: {
                 padding: '2rem'
             },
-            marginBottomSmall: {
-                marginBottom: '1rem'
-            },
-            marginTopSmall: {
-                marginTop: '1rem'
-            },
             flexGap: {
                 display: 'flex',
                 gap: '1rem'
@@ -2580,18 +2471,6 @@
                 display: 'flex',
                 gap: '0.5rem',
                 flexWrap: 'wrap'
-            },
-            warningSection: {
-                background: '#fef3c7',
-                border: '1px solid #f59e0b'
-            },
-            warningText: {
-                color: '#1e293b',
-                fontSize: '0.9rem',
-                marginBottom: '0.5rem'
-            },
-            warningTitle: {
-                color: '#f59e0b'
             },
             scrollableTable: {
                 maxHeight: '400px',
@@ -2627,9 +2506,6 @@
             tableRowOdd: {
                 borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
                 background: 'rgba(255, 255, 255, 0.3)'
-            },
-            tableCell: {
-                padding: '0.75rem'
             },
             tableCellCenter: {
                 padding: '0.75rem',
@@ -2713,7 +2589,7 @@
                         'ftdRecords', 'penalties', 'bonuses', 'tariffs', 
                         'monthlyGoals', 'plannedDays', 'attendance', 
                         'managers', 'managerBaseRates', 'managerTariffs', 'managerClientsCount', 'sortConfig', 'invalidBonusPerFTD', 
-                        'teamLeaderPerFTD', 'teamPlanBonusAmount', 'activeTab', 'loggedIn', 'loginTime'
+                        'teamLeaderPerFTD', 'teamPlanBonusAmount', 'activeTab', 'selectedMonth', 'managerFilter', 'loggedIn', 'loginTime'
                     ];
 
                     const database = await initDB();
@@ -2791,10 +2667,60 @@
         })();
         
         const useSelectedMonth = () => {
-            const [selectedMonth, setSelectedMonth] = useState(() => DateUtils.getCurrentMonthKey());
+            const { selectedMonth, setSelectedMonth } = useData();
             return [selectedMonth, setSelectedMonth];
         };
         
+        const INVALID_REASONS = ['Высокая финансовая нагрузка', 'Аресты', '70+', 'Ошибка ГЕО', 'Не говорит на РУ'];
+        
+        const LEAD_COLORS = {
+            red: { label: '🟥 Красный', color: '#ef4444', bg: '#fef2f2', border: '#fca5a5', description: 'Низкий потенциал' },
+            orange: { label: '🟠 Оранжевый', color: '#f97316', bg: '#fff7ed', border: '#fdba74', description: 'Средний потенциал' },
+            green: { label: '🟢 Зелёный', color: '#22c55e', bg: '#f0fdf4', border: '#86efac', description: 'Высокий потенциал' }
+        };
+        
+        // Анализирует текст КУС и определяет цвет лида на основе содержимого
+        const analyzeLeadColor = (kusText) => {
+            if (!kusText || typeof kusText !== 'string') {
+                return { color: '', reasons: [] };
+            }
+            
+            const lines = kusText.split('\n').map(line => line.trim()).filter(line => line);
+            const reasons = [];
+            let color = '';
+            
+            // Проверка на красные флаги (низкий потенциал)
+            const redPatterns = [
+                /просрочк/i, /арест/i, /70\+/i, /высок.*нагрузк/i,
+                /не.*говорит.*ру/i, /не.*говорит.*русск/i, /ошибка.*гео/i
+            ];
+            
+            // Проверка на зелёные флаги (высокий потенциал)
+            const greenPatterns = [
+                /высок.*доход/i, /больш.*депозит/i, /опыт.*трейд/i, /опыт.*торгов/i
+            ];
+            
+            const textLower = kusText.toLowerCase();
+            
+            // Проверка красных флагов
+            for (const pattern of redPatterns) {
+                if (pattern.test(textLower)) {
+                    if (!color) color = 'red';
+                    break;
+                }
+            }
+            
+            // Проверка зелёных флагов
+            for (const pattern of greenPatterns) {
+                if (pattern.test(textLower)) {
+                    if (!color || color === 'orange') color = 'green';
+                    break;
+                }
+            }
+            
+            return { color, reasons };
+        };
+
         const Validator = {
             validateRecord(record) {
                 const errors = {};
@@ -2809,8 +2735,11 @@
                 if (!record.manager) {
                     errors.manager = 'Менеджер обязателен';
                 }
-                if (!['valid', 'invalid', 'pending', 'not_counted'].includes(record.validity)) {
+                if (!['valid', 'invalid', 'pending', 'not_counted', 'not_transferred'].includes(record.validity)) {
                     errors.validity = 'Некорректный статус валидности';
+                }
+                if (record.validity === 'invalid' && !record.invalidReason) {
+                    errors.invalidReason = 'Укажите причину невалидности';
                 }
                 return {
                     isValid: Object.keys(errors).length === 0,
@@ -3065,7 +2994,8 @@
         
         const useUser = () => useContext(UserContext);
         
-        const DataContext = createContext();
+        const DataStateContext = createContext(null);
+        const DataActionsContext = createContext(null);
         const DataProvider = ({ children }) => {
             const [records, setRecords] = useState([]);
             const [penalties, setPenalties] = useState([]);
@@ -3090,6 +3020,8 @@
             const [managerClientsCount, setManagerClientsCount] = useState({}); // { [monthKey]: { [managerName]: number } } — клиентов по месяцам для конверсии
             const [disabledAgents, setDisabledAgents] = useState({}); // { monthKey: [manager1, manager2, ...] }
             const [removedManagers, setRemovedManagers] = useState({}); // { managerName: removedMonthKey }
+            const [selectedMonth, setSelectedMonthState] = useState(DateUtils.getCurrentMonthKey());
+            const [managerFilter, setManagerFilter] = useState('');
             const [isLoading, setIsLoading] = useState(true);
             const trafficOptions = TRAFFIC_OPTIONS;
             const countryOptions = COUNTRY_OPTIONS;
@@ -3115,7 +3047,9 @@
                             loadedTeamLeaderPerFTD,
                             loadedTeamPlanBonusAmount,
                             loadedDisabledAgents,
-                            loadedRemovedManagers
+                            loadedRemovedManagers,
+                            loadedSelectedMonth,
+                            loadedManagerFilter
                         ] = await Promise.all([
                             StorageUtils.getItem('ftdRecords', []),
                             StorageUtils.getItem('penalties', []),
@@ -3133,7 +3067,9 @@
                             StorageUtils.getItem('teamLeaderPerFTD', 30),
                             StorageUtils.getItem('teamPlanBonusAmount', 500),
                             StorageUtils.getItem('disabledAgents', {}),
-                            StorageUtils.getItem('removedManagers', {})
+                            StorageUtils.getItem('removedManagers', {}),
+                            StorageUtils.getItem('selectedMonth', null),
+                            StorageUtils.getItem('managerFilter', '')
                         ]);
 
                         setRecords(loadedRecords);
@@ -3162,6 +3098,12 @@
                         setTeamPlanBonusAmount(loadedTeamPlanBonusAmount);
                         setDisabledAgents(loadedDisabledAgents || {});
                         setRemovedManagers(loadedRemovedManagers || {});
+                        if (loadedSelectedMonth && typeof loadedSelectedMonth === 'string' && /^\d{4}-\d{2}$/.test(loadedSelectedMonth)) {
+                            setSelectedMonthState(loadedSelectedMonth);
+                        }
+                        if (typeof loadedManagerFilter === 'string') {
+                            setManagerFilter(loadedManagerFilter);
+                        }
                         setIsLoading(false);
                     } catch (error) {
                         setIsLoading(false);
@@ -3171,12 +3113,12 @@
                 loadData();
             }, []);
                         
-            const getGoalsForMonth = (monthKey) => {
+            const getGoalsForMonth = useCallback((monthKey) => {
                 return monthlyGoals[monthKey] || {};
-            };
+            }, [monthlyGoals]);
             
             // Получить список активных менеджеров для конкретного месяца
-            const getActiveManagersForMonth = (monthKey) => {
+            const getActiveManagersForMonth = useCallback((monthKey) => {
                 const currentMonthKey = DateUtils.getCurrentMonthKey();
                 // Для прошлых месяцев показываем ВСЕХ менеджеров из записей, независимо от удаления
                 if (monthKey < currentMonthKey) {
@@ -3194,14 +3136,14 @@
                         return !removedMonth || removedMonth > monthKey;
                     });
                 }
-            };
+            }, [records, monthlyGoals, managers, removedManagers]);
             const updateMonthlyGoal = async (monthKey, manager, goal) => {
                 const monthGoals = { ...getGoalsForMonth(monthKey), [manager]: parseInt(goal) || 0 };
                 const newMonthlyGoals = { ...monthlyGoals, [monthKey]: monthGoals };
                 setMonthlyGoals(newMonthlyGoals);
                 await StorageUtils.setItem('monthlyGoals', newMonthlyGoals);
             };
-            const initializeMonthGoals = async (monthKey) => {
+            const initializeMonthGoals = useCallback(async (monthKey) => {
                 if (!monthlyGoals[monthKey]) {
                     const defaultGoals = {};
                     managers.forEach(manager => {
@@ -3211,15 +3153,15 @@
                     setMonthlyGoals(newMonthlyGoals);
                     await StorageUtils.setItem('monthlyGoals', newMonthlyGoals);
                 }
-            };
-            const getWorkedDays = (monthKey, manager) => {
+            }, [monthlyGoals, managers]);
+            const getWorkedDays = useCallback((monthKey, manager) => {
                 const att = attendance[monthKey]?.[manager] || {};
                 return Object.values(att).reduce((sum, value) => {
                     if (value === true) return sum + 1;
                     if (value === false) return sum;
                     return sum + (Number(value) || 0);
                 }, 0);
-            };
+            }, [attendance]);
             const updatePlannedDays = async (monthKey, days) => {
                 const newPlanned = { ...plannedDays, [monthKey]: parseInt(days) || 22 };
                 setPlannedDays(newPlanned);
@@ -3252,12 +3194,23 @@
                 setAttendance(newAttendance);
                 await StorageUtils.setItem('attendance', newAttendance);
             };
+            const setSelectedMonth = useCallback(async (monthKey) => {
+                setSelectedMonthState(monthKey);
+                await StorageUtils.setItem('selectedMonth', monthKey);
+            }, []);
+            const updateManagerFilter = useCallback(async (manager) => {
+                setManagerFilter(manager);
+                await StorageUtils.setItem('managerFilter', manager);
+            }, []);
             const addRecord = async (record) => {
+                const now = new Date().toISOString();
                 const newRecord = { 
                     ...record, 
                     id: Date.now(),
                     traffic: record.traffic || trafficOptions[0],
-                    country: record.country || countryOptions[0]
+                    country: record.country || countryOptions[0],
+                    createdAt: now,
+                    modifiedAt: null
                 };
                 const newRecords = [...records, newRecord];
                 setRecords(newRecords);
@@ -3279,7 +3232,8 @@
                 await StorageUtils.setItem('ftdRecords', newRecords);
             };
             const updateRecord = async (id, updatedRecord) => {
-                const newRecords = records.map(r => (r.id === id ? { ...updatedRecord, id } : r));
+                const now = new Date().toISOString();
+                const newRecords = records.map(r => (r.id === id ? { ...updatedRecord, id, modifiedAt: now, createdAt: r.createdAt || now } : r));
                 setRecords(newRecords);
                 await StorageUtils.setItem('ftdRecords', newRecords);
                 
@@ -3469,10 +3423,10 @@
                 await StorageUtils.setItem('managerClientsCount', newManagerClientsCount);
                 return true;
             };
-            const updateSortConfig = async (newConfig) => {
+            const updateSortConfig = useCallback(async (newConfig) => {
                 setSortConfig(newConfig);
                 await StorageUtils.setItem('sortConfig', newConfig);
-            };
+            }, []);
             const toggleAgentDisabled = async (monthKey, manager) => {
                 const monthDisabled = disabledAgents[monthKey] || [];
                 const isDisabled = monthDisabled.includes(manager);
@@ -3495,9 +3449,9 @@
                 setDisabledAgents(newDisabledAgents);
                 await StorageUtils.setItem('disabledAgents', newDisabledAgents);
             };
-            const isAgentDisabled = (monthKey, manager) => {
+            const isAgentDisabled = useCallback((monthKey, manager) => {
                 return (disabledAgents[monthKey] || []).includes(manager);
-            };
+            }, [disabledAgents]);
             const exportData = () => {
                 const data = {
                     ftdRecords: records,
@@ -3684,7 +3638,7 @@
                 setBonuses(newBonuses);
                 await StorageUtils.setItem('bonuses', newBonuses);
             };
-            const value = {
+            const valueState = useMemo(() => ({
                 records,
                 penalties,
                 bonuses,
@@ -3693,6 +3647,8 @@
                 plannedDays,
                 attendance,
                 managers,
+                selectedMonth,
+                managerFilter,
                 managerBaseRates,
                 managerTariffs,
                 managerClientsCount,
@@ -3704,8 +3660,12 @@
                 trafficOptions,
                 countryOptions,
                 initialManagers,
-                isLoading,
+                isLoading
+            }), [records, penalties, bonuses, tariffs, monthlyGoals, plannedDays, attendance, managers, selectedMonth, managerFilter, managerBaseRates, managerTariffs, managerClientsCount, sortConfig, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, disabledAgents, isLoading]);
+            const valueActions = useMemo(() => ({
                 getMonthKey: DateUtils.getMonthKey,
+                setSelectedMonth,
+                setManagerFilter: updateManagerFilter,
                 getGoalsForMonth,
                 updateMonthlyGoal,
                 initializeMonthGoals,
@@ -3738,7 +3698,7 @@
                 addBonus,
                 deleteBonus,
                 updateBonus
-            };
+            }), [setSelectedMonth, updateManagerFilter, getGoalsForMonth, updateMonthlyGoal, initializeMonthGoals, getActiveManagersForMonth, getWorkedDays, updatePlannedDays, updateAttendance, addRecord, deleteRecord, updateRecord, updateTariff, resetTariffs, updateInvalidBonus, updateTeamLeaderPerFTD, updateTeamPlanBonusAmount, toggleAgentDisabled, isAgentDisabled, addManager, deleteManager, updateManagerBaseRate, updateManagerTariffs, updateManagerClientsCount, updateSortConfig, exportData, importData, createBackup, addPenalty, deletePenalty, updatePenalty, addBonus, deleteBonus, updateBonus]);
             if (isLoading) {
                 return (
                     <div className="animate-fade-in" style={{
@@ -3762,12 +3722,17 @@
             }
 
             return (
-                <DataContext.Provider value={value}>
-                    {children}
-                </DataContext.Provider>
+                <DataStateContext.Provider value={valueState}>
+                    <DataActionsContext.Provider value={valueActions}>
+                        {children}
+                    </DataActionsContext.Provider>
+                </DataStateContext.Provider>
             );
         };
-        const useData = () => useContext(DataContext);
+        const useData = () => ({
+            ...(useContext(DataStateContext) || {}),
+            ...(useContext(DataActionsContext) || {})
+        });
         const useNotification = () => useContext(NotificationContext);
         
         const useMonthData = (selectedMonth) => {
@@ -3789,82 +3754,6 @@
             );
             
             return { monthRecords, monthPenalties, monthBonuses };
-        };
-        
-        // Хук для Push-уведомлений о достижении плана
-        const usePlanNotifications = () => {
-            const { records, monthlyGoals, managers, disabledAgents } = useData();
-            const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-                return localStorage.getItem('planNotificationsEnabled') === 'true';
-            });
-            const [permissionStatus, setPermissionStatus] = useState(() => 
-                PushNotificationUtils.getPermission()
-            );
-            const notifiedPlansRef = React.useRef(new Set());
-            
-            // Включение/выключение уведомлений
-            const toggleNotifications = useCallback(async () => {
-                if (!notificationsEnabled) {
-                    const result = await PushNotificationUtils.requestPermission();
-                    if (result.granted) {
-                        setNotificationsEnabled(true);
-                        setPermissionStatus('granted');
-                        localStorage.setItem('planNotificationsEnabled', 'true');
-                        return { success: true };
-                    } else {
-                        setPermissionStatus(result.reason);
-                        return { success: false, reason: result.reason };
-                    }
-                } else {
-                    setNotificationsEnabled(false);
-                    localStorage.setItem('planNotificationsEnabled', 'false');
-                    return { success: true };
-                }
-            }, [notificationsEnabled]);
-            
-            // Отслеживание выполнения планов
-            useEffect(() => {
-                if (!notificationsEnabled || permissionStatus !== 'granted') return;
-                
-                const currentMonthKey = DateUtils.getCurrentMonthKey();
-                const currentGoals = monthlyGoals[currentMonthKey] || {};
-                const monthDisabled = disabledAgents[currentMonthKey] || [];
-                const monthRecords = DateUtils.filterByMonth(records, currentMonthKey);
-                
-                managers.forEach(manager => {
-                    if (monthDisabled.includes(manager)) return;
-                    
-                    const goal = currentGoals[manager] || 0;
-                    if (goal === 0) return;
-                    
-                    const validCount = monthRecords.filter(
-                        r => r.manager === manager && r.validity === 'valid'
-                    ).length;
-                    
-                    const notificationKey = `${currentMonthKey}-${manager}-${goal}`;
-                    
-                    // Уведомление о выполнении плана (только один раз)
-                    if (validCount >= goal && !notifiedPlansRef.current.has(notificationKey)) {
-                        notifiedPlansRef.current.add(notificationKey);
-                        PushNotificationUtils.notifyPlanCompleted(manager, validCount, goal);
-                    }
-                    
-                    // Уведомление о прогрессе (90%)
-                    const progressKey90 = `${notificationKey}-90`;
-                    const percent = Math.round((validCount / goal) * 100);
-                    if (percent >= 90 && percent < 100 && !notifiedPlansRef.current.has(progressKey90)) {
-                        notifiedPlansRef.current.add(progressKey90);
-                        PushNotificationUtils.notifyPlanProgress(manager, validCount, goal, percent);
-                    }
-                });
-            }, [records, monthlyGoals, managers, disabledAgents, notificationsEnabled, permissionStatus]);
-            
-            return {
-                notificationsEnabled,
-                permissionStatus,
-                toggleNotifications,
-                isSupported: PushNotificationUtils.isSupported()
-            };
         };
         
         const ManagerDataCalculator = {
@@ -3932,7 +3821,9 @@
                     teamPlanBonus,
                     managerBonuses,
                     managerBaseRates,
-                    managerTariffs
+                    managerTariffs,
+                    monthRecords = [],
+                    teamLeaderName = ''
                 } = config;
                 
                 return Calculator.calculateSalary({
@@ -3951,7 +3842,9 @@
                     teamPlanBonus,
                     managerBonuses,
                     managerBaseRates,
-                    managerTariffs
+                    managerTariffs,
+                    monthRecords,
+                    teamLeaderName
                 });
             },
             
@@ -4017,7 +3910,9 @@
                 teamPlanBonus,
                 managerBonuses,
                 managerBaseRates,
-                managerTariffs
+                managerTariffs,
+                monthRecords,
+                teamLeaderName: TEAM_LEADER_NAME
             });
             
             const totalWithBonus = ManagerDataCalculator.calculateTotalWithBonus(
@@ -4060,7 +3955,9 @@
                     teamPlanBonus = 0,
                     managerBonuses = 0,
                     managerBaseRates = {},
-                    managerTariffs = {}
+                    managerTariffs = {},
+                    monthRecords = [],
+                    teamLeaderName = ''
                 } = config;
                 
                 const { baseRate, bonusPerFTD } = this._calculateBaseRate(
@@ -4212,11 +4109,39 @@
                     underRatio
                 };
             },
+            
+            _getWeekKey(date) {
+                // Получаем понедельник недели (начало недели)
+                // date может быть строкой или объектом Date
+                const d = date instanceof Date ? new Date(date) : new Date(date + 'T00:00:00');
+                
+                // Получаем день недели (0 = воскресенье, 1 = понедельник, ..., 6 = суббота)
+                const day = d.getDay();
+                
+                // Вычисляем разницу до понедельника
+                // Если день = 0 (воскресенье), то diff = -6 (идем на 6 дней назад)
+                // Если день = 1 (понедельник), то diff = 0 (остаемся на месте)
+                // Если день = 2 (вторник), то diff = -1 (идем на 1 день назад)
+                // И так далее
+                const diff = day === 0 ? -6 : 1 - day;
+                
+                // Создаем новый объект Date для понедельника
+                const monday = new Date(d);
+                monday.setDate(d.getDate() + diff);
+                monday.setHours(0, 0, 0, 0);
+                
+                // Возвращаем ключ недели в формате YYYY-MM-DD (дата понедельника)
+                const year = monday.getFullYear();
+                const month = String(monday.getMonth() + 1).padStart(2, '0');
+                const dayOfMonth = String(monday.getDate()).padStart(2, '0');
+                
+                return `${year}-${month}-${dayOfMonth}`;
+            },
             calculateStats(records) {
                 const total = records.length;
                 const valid = records.filter(r => r.validity === 'valid').length;
                 const invalid = records.filter(r => r.validity === 'invalid').length;
-                const conversion = total > 0 ? parseFloat(((valid / total) * 100).toFixed(1)) : 0;
+                const conversion = total > 0 ? MathUtils.roundToDecimals((valid / total) * 100, 1) : 0;
                 return { total, valid, invalid, conversion };
             },
             getManagerStats(records, manager) {
@@ -5243,31 +5168,31 @@
             );
         };
         
-        const MonthSelector = ({ label, value, onChange }) => (
+        const MONTH_OPTIONS = DateUtils.generateMonthOptions();
+        const MonthSelector = React.memo(({ label, value, onChange }) => (
             <div className="month-selector">
                 <label>{label}</label>
                 <select value={value} onChange={onChange}>
-                    {DateUtils.generateMonthOptions().map(option => (
+                    {MONTH_OPTIONS.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                 </select>
             </div>
-        );
+        ));
         
-        const DeltaDisplay = ({ delta, isConversion = false, showIfEmpty = false }) => {
+        const DeltaDisplay = React.memo(({ delta, isConversion = false, showIfEmpty = false }) => {
             if (!showIfEmpty && (delta === undefined || delta === null)) return null;
             const sign = delta > 0 ? '+' : '';
             const symbol = isConversion ? 'pp' : '%';
             const value = delta === Infinity ? '∞' : sign + delta + symbol;
             const className = `delta ${delta > 0 ? 'positive' : delta < 0 ? 'negative' : ''}`;
             return <span className={className}>{value}</span>;
-        };
+        });
         
-        const ProgressBar = ({ progress, showLabel = true, animated = false, className = '' }) => {
+        const ProgressBar = React.memo(({ progress, showLabel = true, animated = false, className = '' }) => {
             const progressClass = ProgressUtils.getProgressClass(progress);
             const displayWidth = MathUtils.clampProgress(progress);
             const displayProgress = MathUtils.max(0, progress);
-            
             return (
                 <div className="progress-container">
                     <div 
@@ -5278,7 +5203,7 @@
                     </div>
                 </div>
             );
-        };
+        });
         
         // Оптимизированный компонент бейджей менеджера
         const ManagerBadges = React.memo(({ manager, initialManagers }) => {
@@ -5291,11 +5216,10 @@
             );
         });
         
-        const ManagerProgress = ({ manager, validCount, goal, initialManagers, monthlyGoals, monthKey, disabledAgents = {} }) => {
+        const ManagerProgress = React.memo(({ manager, validCount, goal, initialManagers, monthlyGoals, monthKey, disabledAgents = {} }) => {
             const progress = Calculator.getProgressPercentage(monthlyGoals, manager, validCount, monthKey, disabledAgents);
             const bonus = Calculator.getBonusForGoal(monthlyGoals, manager, validCount, monthKey, disabledAgents);
             const progressClass = ProgressUtils.getProgressClass(progress);
-            
             return (
                 <div style={CommonStyles.statCard}>
                     <div style={CommonStyles.flexBetween}>
@@ -5311,9 +5235,9 @@
                     <ProgressBar progress={progress} />
                 </div>
             );
-        };
+        });
         const AttendanceTab = () => {
-            const { attendance, plannedDays, managers, updateAttendance, getMonthKey, getWorkedDays } = useData();
+            const { attendance, plannedDays, managers, updateAttendance, getMonthKey, getWorkedDays, records, initialManagers } = useData();
             const { addNotification } = useNotification();
             const [selectedMonth, setSelectedMonth] = useSelectedMonth();
             const [selectedManager, setSelectedManager] = useState(managers[0] || '');
@@ -5328,24 +5252,25 @@
             const unMarked = Math.max(0, Math.ceil(planned - worked)); 
             const isOverworkError = worked > planned + 3;
             const [year, mon] = selectedMonth.split('-').map(Number);
-            const monthStart = new Date(year, mon - 1, 1);
-            const firstDayOfWeek = monthStart.getDay() || 7;
             const daysInMonth = new Date(year, mon, 0).getDate();
-            const calendarDays = [];
-            let currentDate = new Date(year, mon - 1, 1 - firstDayOfWeek + 1);
-            for (let i = 0; i < 42; i++) {
-                calendarDays.push(new Date(currentDate));
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-            const handleDayClick = (date, dayNum, currentValue) => {
+            const calendarDays = useMemo(() => {
+                const monthStart = new Date(year, mon - 1, 1);
+                const firstDayOfWeek = monthStart.getDay() || 7;
+                const result = [];
+                let currentDate = new Date(year, mon - 1, 1 - firstDayOfWeek + 1);
+                for (let i = 0; i < 42; i++) {
+                    result.push(new Date(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                return result;
+            }, [year, mon]);
+            const handleDayClick = useCallback((date, dayNum, currentValue) => {
                 if (!selectedManager) return;
                 if (dayNum < 1 || dayNum > daysInMonth) return;
                 const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                
                 let value = currentValue;
                 if (value === true) value = 1;
                 if (value === false) value = 0;
-                
                 let newValue;
                 let message;
                 if (!value || value === 0) {
@@ -5355,13 +5280,56 @@
                     newValue = 1;
                     message = `День ${dayNum} отмечен как полный день`;
                 } else {
-                    newValue = undefined; 
+                    newValue = undefined;
                     message = `День ${dayNum} снят`;
                 }
-                
                 updateAttendance(monthKey, selectedManager, dateStr, newValue);
                 addNotification(message, 'success');
+            }, [selectedManager, monthKey, daysInMonth, updateAttendance, addNotification]);
+            
+            // Получаем записи за месяц для выбранного менеджера
+            const monthRecords = useMemo(() => {
+                if (!records || !selectedManager) return [];
+                return records.filter(r => {
+                    const recordMonth = r.date.substring(0, 7);
+                    return recordMonth === selectedMonth && r.manager === selectedManager;
+                });
+            }, [records, selectedMonth, selectedManager]);
+            
+            // Функция для получения ключа недели (понедельник)
+            const getWeekKey = (date) => {
+                const d = date instanceof Date ? new Date(date) : new Date(date + 'T00:00:00');
+                const day = d.getDay();
+                const diff = day === 0 ? -6 : 1 - day;
+                const monday = new Date(d);
+                monday.setDate(d.getDate() + diff);
+                monday.setHours(0, 0, 0, 0);
+                const year = monday.getFullYear();
+                const month = String(monday.getMonth() + 1).padStart(2, '0');
+                const dayOfMonth = String(monday.getDate()).padStart(2, '0');
+                return `${year}-${month}-${dayOfMonth}`;
             };
+            
+            // Группируем валидные депозиты по неделям
+            const weeklyDeposits = useMemo(() => {
+                const weeksMap = new Map();
+                monthRecords.forEach(record => {
+                    if (record.validity === 'valid') {
+                        const weekKey = getWeekKey(record.date);
+                        if (!weeksMap.has(weekKey)) {
+                            weeksMap.set(weekKey, []);
+                        }
+                        weeksMap.get(weekKey).push(record);
+                    }
+                });
+                return weeksMap;
+            }, [monthRecords]);
+            
+            // Функция для получения количества депозитов за день
+            const getDepositsForDay = (dateStr) => {
+                return monthRecords.filter(r => r.date === dateStr && r.validity === 'valid').length;
+            };
+            
             const { bar } = BarUtils.createAttendanceBar(worked, planned);
             
             return (
@@ -5403,7 +5371,7 @@
                                     paddingRight: '2.5rem'
                                 }}
                             >
-                                {DateUtils.generateMonthOptions().map(option => (
+                                {MONTH_OPTIONS.map(option => (
                                     <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                             </select>
@@ -5472,6 +5440,9 @@
                                             if (dayValue === true) dayValue = 1;
                                             if (dayValue === false || !dayValue) dayValue = 0;
                                             
+                                            // Получаем информацию о депозитах за день
+                                            const depositsCount = getDepositsForDay(dateStr);
+                                            
                                             if (!isCurrentMonth) {
                                                 return <td key={dayIdx}>&nbsp;</td>;
                                             }
@@ -5497,9 +5468,24 @@
                                                             element.classList.add('animate-bounce');
                                                             setTimeout(() => element.classList.remove('animate-bounce'), 600);
                                                         }}
+                                                        style={{ position: 'relative' }}
                                                     >
                                                         <div className="icon-bounce" style={{fontSize: '1.2rem', marginBottom: '0.25rem'}}>{mark}</div>
                                                         <div className="stat-number">{dayNum}</div>
+                                                        {depositsCount > 0 && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '2px',
+                                                                right: '2px',
+                                                                width: '6px',
+                                                                height: '6px',
+                                                                borderRadius: '50%',
+                                                                background: '#10b981',
+                                                                boxShadow: '0 0 0 2px #ecfdf5'
+                                                            }}
+                                                            title={`${depositsCount} ${depositsCount === 1 ? 'депозит' : depositsCount < 5 ? 'депозита' : 'депозитов'}`}
+                                                            />
+                                                        )}
                                                     </div>
                                                 </td>
                                             );
@@ -5515,7 +5501,7 @@
         };
         
         const GeneralPlanTab = () => {
-            const { records, penalties, bonuses, monthlyGoals, managers, initialManagers, initializeMonthGoals, addPenalty, deletePenalty, addBonus, deleteBonus, disabledAgents, tariffs, plannedDays, managerBaseRates, invalidBonusPerFTD, teamLeaderPerFTD, getWorkedDays, getActiveManagersForMonth } = useData();
+            const { records, penalties, bonuses, monthlyGoals, managers, initialManagers, initializeMonthGoals, addPenalty, deletePenalty, addBonus, deleteBonus, disabledAgents, tariffs, plannedDays, managerBaseRates, invalidBonusPerFTD, teamLeaderPerFTD, getWorkedDays, getActiveManagersForMonth, managerFilter } = useData();
             const { addNotification } = useNotification();
             const [selectedMonth, setSelectedMonth] = useSelectedMonth();
             const [penaltyForm, setPenaltyForm] = useState({
@@ -5548,12 +5534,16 @@
                 DateUtils.filterByMonth(bonuses || [], selectedMonth), 
                 [bonuses, selectedMonth]
             );
-            const teamProgress = Calculator.getTeamProgress(monthRecords, monthlyGoals[selectedMonth] || {}, managers, selectedMonth, disabledAgents);
+            const goalsForMonth = monthlyGoals[selectedMonth] || {};
+            const teamProgress = useMemo(
+                () => Calculator.getTeamProgress(monthRecords, goalsForMonth, managers, selectedMonth, disabledAgents),
+                [monthRecords, goalsForMonth, managers, selectedMonth, disabledAgents]
+            );
             let progressClass = 'incomplete';
             if (teamProgress.progress === 100) progressClass = 'completed';
             else if (teamProgress.progress > 70) progressClass = 'partial';
             
-            const handlePenaltySubmit = (e) => {
+            const handlePenaltySubmit = useCallback((e) => {
                 e.preventDefault();
                 const amountNum = parseFloat(penaltyForm.amount);
                 if (!penaltyForm.manager) { addNotification('Выберите менеджера для штрафа', 'error'); return; }
@@ -5563,9 +5553,9 @@
                 addPenalty({ ...penaltyForm, amount: amountNum });
                 setPenaltyForm({ date: DateUtils.getTodayString(), manager: '', comment: '', amount: '' });
                 addNotification('Штраф добавлен', 'success');
-            };
+            }, [penaltyForm, addPenalty, addNotification]);
             
-            const handleBonusSubmit = (e) => {
+            const handleBonusSubmit = useCallback((e) => {
                 e.preventDefault();
                 const amountNum = parseFloat(bonusForm.amount);
                 if (!bonusForm.manager) { addNotification('Выберите менеджера для бонуса', 'error'); return; }
@@ -5575,7 +5565,7 @@
                 addBonus({ ...bonusForm, amount: amountNum });
                 setBonusForm({ date: DateUtils.getTodayString(), manager: '', comment: '', amount: '' });
                 addNotification('Бонус добавлен', 'success');
-            };
+            }, [bonusForm, addBonus, addNotification]);
             
             const goals = monthlyGoals[selectedMonth] || {};
             
@@ -5586,7 +5576,7 @@
                         value={selectedMonth} 
                         onChange={(e) => setSelectedMonth(e.target.value)} 
                     />
-                    <div className="section">
+                        <div className="section">
                         <h3>🏆 Общий план команды за {DateUtils.formatMonthWithYear(selectedMonth)}</h3>
                         <div className="stats-grid">
                             <StatCard title="Общая цель" value={teamProgress.totalGoal} icon="🎯" />
@@ -5607,7 +5597,10 @@
                         <div style={CommonStyles.columnFlex}>
                             {useMemo(() => {
                                 const activeManagers = getActiveManagersForMonth(selectedMonth);
-                                const salesManagers = activeManagers.filter(m => m !== TEAM_LEADER_NAME);
+                                let salesManagers = activeManagers.filter(m => m !== TEAM_LEADER_NAME);
+                                if (managerFilter) {
+                                    salesManagers = salesManagers.filter(m => m === managerFilter);
+                                }
                                 const managerValidCounts = {};
                                 monthRecords.forEach(r => {
                                     if (r.validity === 'valid' && r.manager !== TEAM_LEADER_NAME) {
@@ -5626,7 +5619,7 @@
                                         disabledAgents={disabledAgents}
                                     />
                                 ));
-                            }, [getActiveManagersForMonth, monthRecords, goals, initialManagers, selectedMonth, disabledAgents])}
+                            }, [getActiveManagersForMonth, monthRecords, goals, initialManagers, selectedMonth, disabledAgents, managerFilter])}
                         </div>
                     </div>
                     <div className="section">
@@ -5796,14 +5789,18 @@
                 manager: '',
                 clientId: '',
                 validity: '',
+                invalidReason: '',
                 traffic: trafficOptions[0],
                 country: countryOptions[0],
-                kus: ''
+                kus: '',
+                leadColor: '',
+                leadColorReasons: []
             });
             const [showKusInput, setShowKusInput] = useState(false);
             const [modalOpen, setModalOpen] = useState(false);
             const [deleteId, setDeleteId] = useState(null);
             const [selectedMonth, setSelectedMonth] = useSelectedMonth();
+            const [clientSummary, setClientSummary] = useState('');
             
             // Кастомная валидация
             const [formErrors, setFormErrors] = useState({});
@@ -5814,22 +5811,37 @@
                 manager: 'Менеджер',
                 clientId: 'ID клиента',
                 validity: 'Валидность',
+                invalidReason: 'Причина невалидности',
                 traffic: 'Трафик',
                 country: 'Страна'
             };
             
             const validateField = useCallback((name, value) => {
+                if (name === 'invalidReason') {
+                    if (form.validity === 'invalid' && (!value || value === '')) {
+                        return 'Пожалуйста, заполните поле "Причина невалидности"';
+                    }
+                    return null;
+                }
                 if (!value || value === '') {
                     return `Пожалуйста, заполните поле "${fieldLabels[name]}"`;
                 }
                 return null;
-            }, []);
+            }, [form.validity]);
             
             const handleFieldChange = useCallback((name, value) => {
-                setForm(prev => ({ ...prev, [name]: value }));
-                // Очищаем ошибку при изменении поля
+                setForm(prev => {
+                    const updated = { ...prev, [name]: value };
+                    if (name === 'validity' && value !== 'invalid') {
+                        updated.invalidReason = '';
+                    }
+                    return updated;
+                });
                 if (formErrors[name]) {
                     setFormErrors(prev => ({ ...prev, [name]: null }));
+                }
+                if (name === 'validity' && value !== 'invalid') {
+                    setFormErrors(prev => ({ ...prev, invalidReason: null }));
                 }
             }, [formErrors]);
             
@@ -5843,7 +5855,12 @@
                 const errors = {};
                 let isValid = true;
                 
-                ['date', 'manager', 'clientId', 'validity', 'traffic', 'country'].forEach(field => {
+                const fieldsToValidate = ['date', 'manager', 'clientId', 'validity', 'traffic', 'country'];
+                if (form.validity === 'invalid') {
+                    fieldsToValidate.push('invalidReason');
+                }
+                
+                fieldsToValidate.forEach(field => {
                     const error = validateField(field, form[field]);
                     if (error) {
                         errors[field] = error;
@@ -5852,7 +5869,9 @@
                 });
                 
                 setFormErrors(errors);
-                setTouched({ date: true, manager: true, clientId: true, validity: true, traffic: true, country: true });
+                const touchedFields = { date: true, manager: true, clientId: true, validity: true, traffic: true, country: true };
+                if (form.validity === 'invalid') touchedFields.invalidReason = true;
+                setTouched(touchedFields);
                 return isValid;
             }, [form, validateField]);
             
@@ -5860,58 +5879,91 @@
                 initializeMonthGoals(selectedMonth);
                 setForm(prev => ({ ...prev, date: DateUtils.getTodayString() }));
             }, [selectedMonth, initializeMonthGoals]);
+            
             const monthRecords = useMemo(() => 
                 DateUtils.filterByMonth(records, selectedMonth), 
                 [records, selectedMonth]
             );
-            const handleSubmit = (e) => {
+            const handleSubmit = useCallback((e) => {
                 e.preventDefault();
-                
-                // Кастомная валидация
                 if (!validateAllFields()) {
                     addNotification('Пожалуйста, заполните все обязательные поля', 'warning');
                     return;
                 }
-                
                 const validation = Validator.validateRecord(form);
                 if (!validation.isValid) {
                     Object.values(validation.errors).forEach(err => addNotification(err, 'error'));
                     return;
                 }
                 addRecord(form);
-                const today = new Date();
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
-                const localToday = `${year}-${month}-${day}`;
-                setForm({ 
-                    date: localToday, 
-                    manager: '', 
-                    clientId: '', 
+                setForm({
+                    date: DateUtils.getTodayString(),
+                    manager: '',
+                    clientId: '',
                     validity: '',
+                    invalidReason: '',
                     traffic: trafficOptions[0],
                     country: countryOptions[0],
-                    kus: ''
+                    kus: '',
+                    leadColor: '',
+                    leadColorReasons: []
                 });
                 setShowKusInput(false);
                 setFormErrors({});
                 setTouched({});
+                setClientSummary('');
                 addNotification('Запись добавлена', 'success');
-            };
-            const handleDeleteClick = (id) => {
+            }, [form, validateAllFields, addRecord, addNotification, trafficOptions, countryOptions]);
+            const handleDeleteClick = useCallback((id) => {
                 setDeleteId(id);
                 setModalOpen(true);
-            };
-            const confirmDelete = () => {
+            }, []);
+            const confirmDelete = useCallback(() => {
                 deleteRecord(deleteId);
                 setModalOpen(false);
                 setDeleteId(null);
                 addNotification('Запись удалена', 'success');
-            };
-            const closeModal = () => {
+            }, [deleteId, deleteRecord, addNotification]);
+            const closeModal = useCallback(() => {
                 setModalOpen(false);
                 setDeleteId(null);
+            }, []);
+            // Итоги недели
+            const weekRange = useMemo(() => {
+                const now = new Date();
+                const dayOfWeek = now.getDay();
+                const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                const monday = new Date(now);
+                monday.setDate(now.getDate() + mondayOffset);
+                monday.setHours(0, 0, 0, 0);
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                sunday.setHours(23, 59, 59, 999);
+                const format = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                return { start: format(monday), end: format(sunday), startDate: monday, endDate: sunday };
+            }, []);
+            
+            const weekStats = useMemo(() => {
+                const weekRecords = records.filter(r => r.date >= weekRange.start && r.date <= weekRange.end);
+                const total = weekRecords.length;
+                const valid = weekRecords.filter(r => r.validity === 'valid').length;
+                const invalid = weekRecords.filter(r => r.validity === 'invalid').length;
+                const pending = weekRecords.filter(r => r.validity === 'pending').length;
+                return { total, valid, invalid, pending };
+            }, [records, weekRange]);
+            
+            const lastThreeRecords = useMemo(() => {
+                return [...records].sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 3);
+            }, [records]);
+            
+            const validityLabel = (v) => {
+                if (v === 'valid') return { text: 'Валидный', color: '#10b981' };
+                if (v === 'invalid') return { text: 'Невалидный', color: '#ef4444' };
+                if (v === 'pending') return { text: 'На рассмотрении', color: '#f59e0b' };
+                if (v === 'not_transferred') return { text: 'Не переданный', color: '#9ca3af' };
+                return { text: 'Не засчитано', color: '#6b7280' };
             };
+            
             return (
                 <div>
                     <MonthSelector 
@@ -5919,10 +5971,84 @@
                         value={selectedMonth} 
                         onChange={(e) => setSelectedMonth(e.target.value)} 
                     />
-                    <div className="section">
+
+                    {/* Виджет "Итоги недели" */}
+                    <div className="section animate-fade-in" style={{ marginBottom: '1rem', background: 'linear-gradient(135deg, rgba(79,70,229,0.07) 0%, rgba(16,185,129,0.07) 100%)', border: '1px solid rgba(79,70,229,0.15)', borderRadius: '12px', padding: '1rem 1.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                            <span style={{ fontSize: '1.2rem' }}>📈</span>
+                            <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--primary)' }}>Итоги недели</h4>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                                {weekRange.startDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })} — {weekRange.endDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
+                            </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                            <div style={{ flex: '1 1 120px', background: 'white', borderRadius: '10px', padding: '0.75rem', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid var(--border)' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary)' }}>{weekStats.total}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Всего FTD</div>
+                            </div>
+                            <div style={{ flex: '1 1 120px', background: 'white', borderRadius: '10px', padding: '0.75rem', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #d1fae5' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#10b981' }}>{weekStats.valid}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Валидных</div>
+                            </div>
+                            <div style={{ flex: '1 1 120px', background: 'white', borderRadius: '10px', padding: '0.75rem', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #fecaca' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#ef4444' }}>{weekStats.invalid}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Невалидных</div>
+                            </div>
+                            <div style={{ flex: '1 1 120px', background: 'white', borderRadius: '10px', padding: '0.75rem', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #fef3c7' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#f59e0b' }}>{weekStats.pending}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>На рассмотрении</div>
+                            </div>
+                        </div>
+                        
+                        {weekStats.total > 0 && (
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text)', padding: '0.5rem 0.75rem', background: 'rgba(79,70,229,0.06)', borderRadius: '8px', fontWeight: '500' }}>
+                                За эту неделю: <strong>{weekStats.total} FTD</strong> ({weekStats.valid} валидных)
+                            </div>
+                        )}
+                        
+                        {/* Живая лента: последние 3 записи */}
+                        {lastThreeRecords.length > 0 && (
+                            <div style={{ marginTop: '0.75rem' }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '600' }}>
+                                    🕐 Последние записи:
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                    {lastThreeRecords.map(r => {
+                                        const vLabel = validityLabel(r.validity);
+                                        return (
+                                            <div key={r.id} style={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '0.75rem', 
+                                                background: 'white', 
+                                                padding: '0.5rem 0.75rem', 
+                                                borderRadius: '8px', 
+                                                fontSize: '0.8rem',
+                                                border: '1px solid var(--border)',
+                                                boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+                                            }}>
+                                                {r.leadColor && LEAD_COLORS[r.leadColor] && (
+                                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: LEAD_COLORS[r.leadColor].color, flexShrink: 0 }} title={`${LEAD_COLORS[r.leadColor].label}${r.leadColorReasons && r.leadColorReasons.length > 0 ? ': ' + r.leadColorReasons.join(', ') : ''}`} />
+                                                )}
+                                                <span style={{ color: 'var(--text-muted)', minWidth: '55px' }}>{DateUtils.formatDateShort(r.date)}</span>
+                                                <span style={{ fontWeight: '600', minWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.manager}</span>
+                                                <span style={{ color: 'var(--text-muted)' }}>ID: {r.clientId}</span>
+                                                <span style={{ marginLeft: 'auto', fontWeight: '600', color: vLabel.color, fontSize: '0.75rem' }}>{vLabel.text}</span>
+                                                {r.validity === 'invalid' && r.invalidReason && (
+                                                    <span style={{ fontSize: '0.7rem', color: '#ef4444', fontStyle: 'italic' }}>({r.invalidReason})</span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="section" style={{ pointerEvents: 'auto' }}>
                         <h3>Добавить новую запись FTD за {DateUtils.formatMonthWithYear(selectedMonth)}</h3>
-                        <form onSubmit={handleSubmit} className="animate-fade-in" noValidate>
-                            <div className="form-grid">
+                        <form onSubmit={handleSubmit} className="animate-fade-in" noValidate style={{ pointerEvents: 'auto' }}>
+                            <div className="form-grid" style={{ pointerEvents: 'auto' }}>
                                 <div className={`form-group ${touched.date && formErrors.date ? 'has-error' : ''}`}>
                                     <label>Дата: <span style={{ color: '#ef4444' }}>*</span></label>
                                     <input
@@ -5987,6 +6113,7 @@
                                         <option value="invalid">Невалидный</option>
                                         <option value="pending">На рассмотрении</option>
                                         <option value="not_counted">Не засчитано</option>
+                                        <option value="not_transferred">Не переданный</option>
                                     </select>
                                     {touched.validity && formErrors.validity && (
                                         <div className="validation-error">
@@ -5995,6 +6122,26 @@
                                         </div>
                                     )}
                                 </div>
+                                {form.validity === 'invalid' && (
+                                    <div className={`form-group ${touched.invalidReason && formErrors.invalidReason ? 'has-error' : ''}`} style={{ animation: 'fadeIn 0.3s ease' }}>
+                                        <label>Причина невалидности: <span style={{ color: '#ef4444' }}>*</span></label>
+                                        <select
+                                            value={form.invalidReason}
+                                            onChange={(e) => handleFieldChange('invalidReason', e.target.value)}
+                                            onBlur={() => handleFieldBlur('invalidReason')}
+                                            className={`form-input ${form.invalidReason && !formErrors.invalidReason ? 'valid' : ''}`}
+                                        >
+                                            <option value="">Выберите причину</option>
+                                            {INVALID_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                        </select>
+                                        {touched.invalidReason && formErrors.invalidReason && (
+                                            <div className="validation-error">
+                                                <span className="validation-error-icon">⚠️</span>
+                                                {formErrors.invalidReason}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 <div className={`form-group ${touched.traffic && formErrors.traffic ? 'has-error' : ''}`}>
                                     <label>Трафик: <span style={{ color: '#ef4444' }}>*</span></label>
                                     <select
@@ -6057,8 +6204,22 @@
                                 {showKusInput && (
                                     <div className="animate-fade-in" style={{ marginTop: '0.5rem' }}>
                                         <textarea
-                                            value={form.kus}
-                                            onChange={(e) => setForm({...form, kus: e.target.value})}
+                                            value={form.kus || ''}
+                                            onChange={(e) => {
+                                                const newKus = e.target.value;
+                                                try {
+                                                    // Анализ цвета лида
+                                                    if (typeof analyzeLeadColor === 'function') {
+                                                        const result = analyzeLeadColor(newKus);
+                                                        setForm({...form, kus: newKus, leadColor: result?.color || form.leadColor, leadColorReasons: result?.reasons || []});
+                                                    } else {
+                                                        setForm({...form, kus: newKus});
+                                                    }
+                                                } catch (error) {
+                                                    console.error('Ошибка при обработке КУС:', error);
+                                                    setForm({...form, kus: newKus});
+                                                }
+                                            }}
                                             placeholder={`TJ - 105353  Холмахмадов Комил
 
 Город: 
@@ -6089,7 +6250,9 @@
                                                 fontFamily: 'inherit',
                                                 fontSize: '0.9rem',
                                                 resize: 'vertical',
-                                                lineHeight: '1.5'
+                                                lineHeight: '1.5',
+                                                backgroundColor: 'var(--background)',
+                                                color: 'var(--text)'
                                             }}
                                         />
                                         <div style={{ 
@@ -6101,6 +6264,65 @@
                                         </div>
                                     </div>
                                 )}
+                                
+                                {/* Цвет лида */}
+                                <div style={{ marginTop: '0.75rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                                        Портрет клиента:
+                                        {form.leadColor && LEAD_COLORS[form.leadColor] && (
+                                            <span style={{ 
+                                                marginLeft: '0.5rem', fontSize: '0.8rem', padding: '2px 8px', 
+                                                borderRadius: '6px', fontWeight: '600',
+                                                background: LEAD_COLORS[form.leadColor].bg, 
+                                                color: LEAD_COLORS[form.leadColor].color,
+                                                border: `1px solid ${LEAD_COLORS[form.leadColor].border}`
+                                            }}>
+                                                {LEAD_COLORS[form.leadColor].description}
+                                            </span>
+                                        )}
+                                    </label>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                        {Object.entries(LEAD_COLORS).map(([key, cfg]) => (
+                                            <button
+                                                key={key}
+                                                type="button"
+                                                onClick={() => setForm({...form, leadColor: form.leadColor === key ? '' : key, leadColorReasons: form.leadColor === key ? [] : ['Выбрано вручную']})}
+                                                style={{
+                                                    padding: '0.5rem 1rem',
+                                                    borderRadius: '8px',
+                                                    border: form.leadColor === key ? `2px solid ${cfg.color}` : '2px solid var(--border)',
+                                                    background: form.leadColor === key ? cfg.bg : 'white',
+                                                    color: form.leadColor === key ? cfg.color : 'var(--text-muted)',
+                                                    fontWeight: form.leadColor === key ? '700' : '500',
+                                                    fontSize: '0.85rem',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease',
+                                                    boxShadow: form.leadColor === key ? `0 2px 8px ${cfg.color}30` : 'none'
+                                                }}
+                                            >
+                                                {cfg.label}
+                                            </button>
+                                        ))}
+                                        {form.leadColor && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setForm({...form, leadColor: '', leadColorReasons: []})}
+                                                style={{
+                                                    padding: '0.5rem 0.75rem', borderRadius: '8px',
+                                                    border: '1px solid var(--border)', background: 'white',
+                                                    color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer'
+                                                }}
+                                            >
+                                                ✕ Сбросить
+                                            </button>
+                                        )}
+                                    </div>
+                                    {form.kus && !form.leadColor && (
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontStyle: 'italic' }}>
+                                            Цвет не определён автоматически — выберите вручную
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             
                             <button type="submit" className="btn btn-primary btn-animated active-scale" style={{ marginTop: '1rem' }}>
@@ -6825,8 +7047,13 @@
             );
         };
         
+        const COUNTRY_FLAGS = {
+            'Казахстан': '🇰🇿', 'Кыргызстан': '🇰🇬', 'Таджикистан': '🇹🇯',
+            'Белорусь': '🇧🇾', 'Монголия': '🇲🇳', 'Израиль': '🇮🇱', 'Литва': '🇱🇹'
+        };
+
         const StatisticsTab = () => {
-            const { records, penalties, bonuses, monthlyGoals, tariffs, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, plannedDays, attendance, managers, initialManagers, managerBaseRates, managerTariffs, managerClientsCount, initializeMonthGoals, getWorkedDays, disabledAgents, getActiveManagersForMonth } = useData();
+            const { records, penalties, bonuses, monthlyGoals, tariffs, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, plannedDays, attendance, managers, initialManagers, managerBaseRates, managerTariffs, managerClientsCount, initializeMonthGoals, getWorkedDays, disabledAgents, getActiveManagersForMonth, managerFilter, countryOptions } = useData();
             const [selectedMonth, setSelectedMonth] = useSelectedMonth();
             useEffect(() => {
                 initializeMonthGoals(selectedMonth);
@@ -6836,13 +7063,21 @@
             
             const goals = monthlyGoals[selectedMonth] || {};
             const plannedD = plannedDays[selectedMonth] || 22;
-            const totalStats = Calculator.calculateStats(monthRecords);
+            const totalStats = useMemo(
+                () => Calculator.calculateStats(monthRecords),
+                [monthRecords]
+            );
             const totalValid = totalStats.valid;
             const totalClientsForMonth = useMemo(() => {
                 const monthClients = managerClientsCount[selectedMonth] || {};
                 return managers.reduce((sum, m) => sum + (parseInt(monthClients[m], 10) || 0), 0);
             }, [managerClientsCount, selectedMonth, managers]);
-            const overallConversionPercent = totalClientsForMonth > 0 ? MathUtils.round((totalStats.valid / totalClientsForMonth) * 100) : null;
+            const overallConversionPercent = useMemo(() => {
+                if (totalClientsForMonth > 0) {
+                    return MathUtils.roundToDecimals((totalStats.valid / totalClientsForMonth) * 100, 1);
+                }
+                return null;
+            }, [totalStats, totalClientsForMonth]);
             
             const managersData = useMemo(() => {
                 const config = {
@@ -6866,12 +7101,41 @@
                 };
                 
                 const activeManagers = getActiveManagersForMonth(selectedMonth);
-                const salesManagers = activeManagers.filter(m => m !== TEAM_LEADER_NAME);
+                let salesManagers = activeManagers.filter(m => m !== TEAM_LEADER_NAME);
+                if (managerFilter) {
+                    salesManagers = salesManagers.filter(m => m === managerFilter);
+                }
                 return salesManagers.map(manager => ({
                     manager,
                     data: getManagerData(manager, config)
                 }));
-            }, [getActiveManagersForMonth, monthRecords, monthPenalties, monthBonuses, goals, plannedD, selectedMonth, initialManagers, totalValid, tariffs, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, managerBaseRates, managerTariffs, getWorkedDays, managerClientsCount, managers]);
+            }, [getActiveManagersForMonth, monthRecords, monthPenalties, monthBonuses, goals, plannedD, selectedMonth, initialManagers, totalValid, tariffs, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, managerBaseRates, managerTariffs, getWorkedDays, managerClientsCount, managers, managerFilter]);
+
+            const managerCountryStats = useMemo(() => {
+                const allManagersFromRecords = [...new Set(records.map(r => r.manager))];
+                let salesManagers = allManagersFromRecords.filter(m => m && m !== TEAM_LEADER_NAME);
+                if (managerFilter) {
+                    salesManagers = salesManagers.filter(m => m === managerFilter);
+                }
+                return salesManagers.map(manager => {
+                    const managerRecords = records.filter(r => r.manager === manager);
+                    const countries = {};
+                    managerRecords.forEach(r => {
+                        const country = r.country || 'Не указана';
+                        if (!countries[country]) {
+                            countries[country] = { total: 0, valid: 0, invalid: 0, pending: 0 };
+                        }
+                        countries[country].total++;
+                        if (r.validity === 'valid') countries[country].valid++;
+                        else if (r.validity === 'invalid') countries[country].invalid++;
+                        else countries[country].pending++;
+                    });
+                    const totalDeposits = managerRecords.length;
+                    const totalValid = managerRecords.filter(r => r.validity === 'valid').length;
+                    return { manager, countries, totalDeposits, totalValid };
+                });
+            }, [records, managerFilter]);
+
             return (
                 <div>
                     <MonthSelector 
@@ -6885,6 +7149,58 @@
                         <StatCard title="Невалидных депозитов" value={totalStats.invalid} icon="❌" />
                         <StatCard title="Конверсия" value={`${totalStats.conversion}%`} icon="📈" />
                         <StatCard title="Общая конверсия (валидные / клиенты)" value={overallConversionPercent !== null ? `${overallConversionPercent}%` : '—'} icon="👥" />
+                    </div>
+                    <div className="section">
+                        <h3>🎨 Статистика по цветам лидов за {DateUtils.formatMonthWithYear(selectedMonth)}</h3>
+                        <p style={CommonStyles.mutedText}>
+                            Количество записей с указанным цветом лида (по КУС)
+                        </p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '1rem' }}>
+                            {Object.entries(LEAD_COLORS).map(([key, cfg]) => {
+                                const count = monthRecords.filter(r => r.leadColor === key).length;
+                                return (
+                                    <div
+                                        key={key}
+                                        style={{
+                                            flex: '1 1 140px',
+                                            minWidth: '140px',
+                                            padding: '1rem',
+                                            borderRadius: '8px',
+                                            background: cfg.bg,
+                                            border: `1px solid ${cfg.border}`,
+                                            color: cfg.color,
+                                            fontWeight: 600,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            gap: '0.5rem'
+                                        }}
+                                    >
+                                        <span>{cfg.label}</span>
+                                        <span style={{ fontSize: '1.25rem' }}>{count}</span>
+                                    </div>
+                                );
+                            })}
+                            <div
+                                style={{
+                                    flex: '1 1 140px',
+                                    minWidth: '140px',
+                                    padding: '1rem',
+                                    borderRadius: '8px',
+                                    background: 'var(--background)',
+                                    border: '1px solid var(--border)',
+                                    color: 'var(--text-muted)',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '0.5rem'
+                                }}
+                            >
+                                <span>Без цвета</span>
+                                <span style={{ fontSize: '1.25rem' }}>{monthRecords.filter(r => !r.leadColor || r.leadColor === '').length}</span>
+                            </div>
+                        </div>
                     </div>
                     <div className="section">
                         <h3>🎯 Прогресс по планам за {DateUtils.formatMonthWithYear(selectedMonth)}</h3>
@@ -6966,6 +7282,160 @@
                                 ));
                             }, [records, initialManagers, monthlyGoals])}
                         </div>
+                    </div>
+
+                    <div className="section">
+                        <h3 style={{marginBottom: '0.25rem'}}>🌍 Депозиты по странам (менеджеры) — за всё время</h3>
+                        <p style={{...CommonStyles.mutedText, marginBottom: '1.25rem'}}>
+                            Распределение закрытых депозитов каждого менеджера по странам за весь период хранения данных
+                        </p>
+                        {managerCountryStats.length === 0 ? (
+                            <p style={{textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0'}}>Нет данных</p>
+                        ) : (
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '1.25rem'}}>
+                                {managerCountryStats.map(({ manager, countries, totalDeposits, totalValid: mgrValid }, mIdx) => {
+                                    const sortedCountries = Object.entries(countries).sort((a, b) => b[1].valid - a[1].valid);
+                                    const maxValid = Math.max(...Object.values(countries).map(c => c.valid), 1);
+                                    const gradients = [
+                                        'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                        'linear-gradient(135deg, #0ea5e9, #6366f1)',
+                                        'linear-gradient(135deg, #f59e0b, #ef4444)',
+                                        'linear-gradient(135deg, #10b981, #059669)',
+                                        'linear-gradient(135deg, #ec4899, #8b5cf6)',
+                                        'linear-gradient(135deg, #14b8a6, #0ea5e9)'
+                                    ];
+                                    const gradient = gradients[mIdx % gradients.length];
+                                    return (
+                                        <div key={manager} className="animate-scale-in" style={{
+                                            background: 'var(--surface)',
+                                            borderRadius: '12px',
+                                            overflow: 'hidden',
+                                            border: '1px solid var(--border)',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                                            animationDelay: `${mIdx * 0.08}s`
+                                        }}>
+                                            <div style={{
+                                                background: gradient,
+                                                padding: '1rem 1.25rem',
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                flexWrap: 'wrap',
+                                                gap: '0.5rem'
+                                            }}>
+                                                <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                                                    <div style={{
+                                                        width: '40px', height: '40px', borderRadius: '50%',
+                                                        background: 'rgba(255,255,255,0.2)',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        fontSize: '1.1rem', fontWeight: '700', color: 'white',
+                                                        backdropFilter: 'blur(4px)'
+                                                    }}>
+                                                        {manager.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <div style={{color: 'white', fontWeight: '700', fontSize: '1.05rem'}}>{manager}</div>
+                                                        <div style={{color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem'}}>
+                                                            {Object.keys(countries).length} {Object.keys(countries).length === 1 ? 'страна' : Object.keys(countries).length < 5 ? 'страны' : 'стран'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+                                                    <div style={{
+                                                        background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)',
+                                                        borderRadius: '8px', padding: '0.4rem 0.75rem',
+                                                        color: 'white', textAlign: 'center', minWidth: '70px'
+                                                    }}>
+                                                        <div style={{fontSize: '1.2rem', fontWeight: '800'}}>{totalDeposits}</div>
+                                                        <div style={{fontSize: '0.7rem', opacity: 0.85}}>Всего</div>
+                                                    </div>
+                                                    <div style={{
+                                                        background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)',
+                                                        borderRadius: '8px', padding: '0.4rem 0.75rem',
+                                                        color: 'white', textAlign: 'center', minWidth: '70px'
+                                                    }}>
+                                                        <div style={{fontSize: '1.2rem', fontWeight: '800'}}>{mgrValid}</div>
+                                                        <div style={{fontSize: '0.7rem', opacity: 0.85}}>Валид</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style={{padding: '1rem 1.25rem'}}>
+                                                {sortedCountries.length === 0 ? (
+                                                    <p style={{color: 'var(--text-muted)', textAlign: 'center', padding: '1rem 0'}}>Нет записей</p>
+                                                ) : (
+                                                    <div style={{display: 'flex', flexDirection: 'column', gap: '0.6rem'}}>
+                                                        {sortedCountries.map(([country, data]) => {
+                                                            const barWidth = maxValid > 0 ? (data.valid / maxValid) * 100 : 0;
+                                                            const flag = COUNTRY_FLAGS[country] || '🏳️';
+                                                            return (
+                                                                <div key={country} style={{
+                                                                    display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                                                    padding: '0.6rem 0.75rem',
+                                                                    borderRadius: '8px',
+                                                                    background: 'var(--background)',
+                                                                    border: '1px solid var(--border)',
+                                                                    transition: 'all 0.2s ease',
+                                                                    position: 'relative',
+                                                                    overflow: 'hidden'
+                                                                }}>
+                                                                    <div style={{
+                                                                        position: 'absolute', left: 0, top: 0, bottom: 0,
+                                                                        width: `${barWidth}%`,
+                                                                        background: 'linear-gradient(90deg, rgba(99,102,241,0.08), rgba(99,102,241,0.03))',
+                                                                        transition: 'width 0.6s ease',
+                                                                        borderRadius: '8px'
+                                                                    }} />
+                                                                    <span style={{fontSize: '1.5rem', zIndex: 1, lineHeight: 1}}>{flag}</span>
+                                                                    <div style={{flex: 1, zIndex: 1, minWidth: 0}}>
+                                                                        <div style={{fontWeight: '600', fontSize: '0.9rem', color: 'var(--text)'}}>{country}</div>
+                                                                    </div>
+                                                                    <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', zIndex: 1, flexShrink: 0}}>
+                                                                        <span style={{
+                                                                            background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+                                                                            color: '#166534', padding: '0.2rem 0.6rem',
+                                                                            borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700',
+                                                                            minWidth: '32px', textAlign: 'center'
+                                                                        }}>
+                                                                            ✅ {data.valid}
+                                                                        </span>
+                                                                        {data.invalid > 0 && (
+                                                                            <span style={{
+                                                                                background: 'linear-gradient(135deg, #fee2e2, #fecaca)',
+                                                                                color: '#991b1b', padding: '0.2rem 0.6rem',
+                                                                                borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700',
+                                                                                minWidth: '32px', textAlign: 'center'
+                                                                            }}>
+                                                                                ❌ {data.invalid}
+                                                                            </span>
+                                                                        )}
+                                                                        {data.pending > 0 && (
+                                                                            <span style={{
+                                                                                background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                                                                                color: '#92400e', padding: '0.2rem 0.6rem',
+                                                                                borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700',
+                                                                                minWidth: '32px', textAlign: 'center'
+                                                                            }}>
+                                                                                ⏳ {data.pending}
+                                                                            </span>
+                                                                        )}
+                                                                        <span style={{
+                                                                            color: 'var(--text-muted)', fontSize: '0.8rem',
+                                                                            fontWeight: '600', minWidth: '20px', textAlign: 'right'
+                                                                        }}>
+                                                                            {data.total}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -7098,8 +7568,35 @@
                     });
                 });
                 
+                Object.keys(data).forEach(monthKey => {
+                    const recs = data[monthKey].records;
+                    const valid = Object.values(data[monthKey].managers).reduce((s, m) => s + m.valid, 0);
+                    const invalid = Object.values(data[monthKey].managers).reduce((s, m) => s + m.invalid, 0);
+                    const total = recs.length;
+                    data[monthKey].stats = {
+                        total,
+                        valid,
+                        invalid,
+                        conversion: total > 0 ? MathUtils.roundToDecimals((valid / total) * 100, 1) : 0
+                    };
+                    const monthClients = managerClientsCount[monthKey] || {};
+                    const totalClients = managers.reduce((s, m) => s + (parseInt(monthClients[m], 10) || 0), 0);
+                    data[monthKey].overallConversion = totalClients > 0 ? MathUtils.roundToDecimals((valid / totalClients) * 100, 1) : null;
+                    data[monthKey].penaltiesSum = (data[monthKey].penalties || []).reduce((s, p) => s + (Math.abs(p.amount) || 0), 0);
+                });
                 return data;
-            }, [filteredRecords, penalties, bonuses, monthlyGoals, yearFilter, managers]);
+            }, [filteredRecords, penalties, bonuses, monthlyGoals, yearFilter, managers, managerClientsCount]);
+            const sortedMonthKeys = useMemo(
+                () => Object.keys(monthlyData).sort().reverse(),
+                [monthlyData]
+            );
+            const activeManagersByMonth = useMemo(() => {
+                const map = {};
+                sortedMonthKeys.forEach(monthKey => {
+                    map[monthKey] = getActiveManagersForMonth(monthKey).filter(manager => !isAgentDisabled(monthKey, manager));
+                });
+                return map;
+            }, [sortedMonthKeys, getActiveManagersForMonth, isAgentDisabled]);
             // Оптимизация: getPreviousMonthData без побочных эффектов
             const getPreviousMonthData = useCallback((monthKey) => {
                 const date = new Date(monthKey + '-01');
@@ -7137,6 +7634,15 @@
                 });
                 return { monthKey: prevMonthKey, records: prevRecords, managers: prevManagers, stats: prevStats, goals: prevGoals, penalties: prevPenalties, bonuses: prevBonuses };
             }, [records, penalties, bonuses, monthlyGoals]);
+            const prevMonthDataMap = useMemo(() => {
+                if (!comparePrevious) return {};
+                const map = {};
+                sortedMonthKeys.forEach(monthKey => {
+                    const data = getPreviousMonthData(monthKey);
+                    if (data) map[monthKey] = data;
+                });
+                return map;
+            }, [comparePrevious, sortedMonthKeys, getPreviousMonthData]);
             return (
                 <div>
                     <div className="section">
@@ -7161,16 +7667,16 @@
                             </div>
                         </div>
                     </div>
-                    {Object.keys(monthlyData).length === 0 ? (
+                    {sortedMonthKeys.length === 0 ? (
                         <p style={{...CommonStyles.centeredText, ...CommonStyles.paddingLarge}}>
                             Нет данных за выбранный период
                         </p>
                     ) : (
-                        Object.keys(monthlyData).sort().reverse().map(monthKey => {
+                        sortedMonthKeys.map(monthKey => {
                             const monthData = monthlyData[monthKey];
-                            const stats = Calculator.calculateStats(monthData.records);
+                            const stats = monthData.stats;
                             const goals = monthlyGoals[monthKey] || {};
-                            const prevMonthData = comparePrevious ? getPreviousMonthData(monthKey) : null;
+                            const prevMonthData = prevMonthDataMap[monthKey] || null;
                             const prevStats = prevMonthData ? prevMonthData.stats : null;
                             const plannedD = plannedDays[monthKey] || 22;
                             const totalValid = stats.valid;
@@ -7221,12 +7727,7 @@
                                         <div style={CommonStyles.flexColumnStart}>
                                             <div style={CommonStyles.flexAlignBaseline}>
                                                 <span style={{...CommonStyles.largeStat, color: '#8b5cf6'}}>
-                                                    {(() => {
-                                                        const monthClients = managerClientsCount[monthKey] || {};
-                                                        const totalClients = managers.reduce((s, m) => s + (parseInt(monthClients[m], 10) || 0), 0);
-                                                        const overallConv = totalClients > 0 ? MathUtils.round((stats.valid / totalClients) * 100) : null;
-                                                        return overallConv !== null ? `${overallConv}%` : '—';
-                                                    })()}
+                                                    {monthData.overallConversion !== null ? `${monthData.overallConversion}%` : '—'}
                                                 </span>
                                             </div>
                                             <div style={CommonStyles.smallText}>Общая конверсия</div>
@@ -7234,7 +7735,7 @@
                                 <div style={CommonStyles.flexColumnStart}>
                                     <div style={CommonStyles.flexAlignBaseline}>
                                         <span style={{...CommonStyles.largeStat, color: '#ef4444'}}>
-                                            -${(monthData.penalties || []).reduce((s, p) => s + (Math.abs(p.amount) || 0), 0)}
+                                            -${monthData.penaltiesSum}
                                         </span>
                                     </div>
                                     <div style={CommonStyles.smallText}>Штрафы (месяц)</div>
@@ -7245,7 +7746,7 @@
                                             🎯 Планы на месяц
                                         </h5>
                                         <div style={CommonStyles.plansGrid}>
-                                            {getActiveManagersForMonth(monthKey).filter(manager => !isAgentDisabled(monthKey, manager)).map(manager => {
+                                            {(activeManagersByMonth[monthKey] || []).map(manager => {
                                                 const managerPlan = goals[manager] || 0;
                                                 const managerValid = monthData.managers[manager]?.valid || 0;
                                                 const progress = Calculator.getProgressPercentage(goals, manager, managerValid);
@@ -7282,11 +7783,11 @@
                                             })}
                                         </div>
                                     </div>
-                                    {getActiveManagersForMonth(monthKey).filter(manager => !isAgentDisabled(monthKey, manager)).map(manager => {
+                                    {(activeManagersByMonth[monthKey] || []).map(manager => {
                                         const managerData = monthData.managers[manager] || { total: 0, valid: 0, invalid: 0 };
                                         const managerConversion = managerData.total > 0 
                                             ? ((managerData.valid / managerData.total) * 100).toFixed(1) : 0;
-                                        const activeManagersForMonth = getActiveManagersForMonth(monthKey);
+                                        const activeManagersForMonth = activeManagersByMonth[monthKey] || [];
                                         const otherManagers = activeManagersForMonth.filter(m => m !== manager);
                                         const otherManagersValid = otherManagers.map(emp => ({
                                             emp,
@@ -7490,30 +7991,11 @@
                 return 3;
             }, [selectedMonth]);
             
-            // Проверка пароля через API или локально
-            const verifyPasswordViaAPI = async (pass, type) => {
-                try {
-                    const response = await fetch('/api/verify-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ password: pass, type })
-                    });
-                    const data = await response.json();
-                    return { success: data.success, isApiAvailable: true };
-                } catch (error) {
-                    console.log('API недоступен, используем локальную проверку');
-                    return { success: false, isApiAvailable: false };
-                }
-            };
-            
             const handlePasswordSubmit = async (e) => {
                 e.preventDefault();
                 setError('');
                 
-                // Сначала пробуем API
-                const apiResult = await verifyPasswordViaAPI(password, 'team_leader_salary');
-                const isValid = apiResult.success || 
-                    (!apiResult.isApiAvailable && password === TEAM_LEADER_SALARY_PASSWORD);
+                const isValid = password === TEAM_LEADER_SALARY_PASSWORD;
                 
                 if (isValid) {
                     setIsAuthorized(true);
@@ -8028,6 +8510,180 @@
                                     )}
                                 </div>
                             )}
+
+                            {/* ===== 2. Рейтинг «Вклад в мою зарплату» ===== */}
+                            {(() => {
+                                const salesManagers = managers.filter(m => m !== TEAM_LEADER_NAME);
+                                const contributions = salesManagers.map(manager => {
+                                    const managerRecords = monthRecords.filter(r => r.manager === manager);
+                                    const validCount = managerRecords.filter(r => r.validity === 'valid').length;
+                                    const invalidCount = managerRecords.filter(r => r.validity === 'invalid').length;
+                                    const depositContribution = validCount * TeamLeaderSalaryCalculator.VALID_DEPOSIT_BONUS + invalidCount * TeamLeaderSalaryCalculator.INVALID_DEPOSIT_BONUS;
+                                    const managerBonuses = (monthBonuses || []).filter(b => b.manager === manager);
+                                    const bonusContribution = managerBonuses.length * TeamLeaderSalaryCalculator.SALE_BONUS_REWARD;
+                                    const total = depositContribution + bonusContribution;
+                                    return { manager, validCount, invalidCount, depositContribution, bonusContribution, total };
+                                }).sort((a, b) => b.total - a.total);
+                                const maxContribution = contributions.length > 0 ? contributions[0].total : 1;
+
+                                return contributions.length > 0 && (
+                                    <div style={{
+                                        marginTop: '1.5rem', padding: '1.5rem',
+                                        background: 'rgba(255,255,255,0.03)', borderRadius: '16px',
+                                        border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                                            <span style={{ fontSize: '1.5rem' }}>💎</span>
+                                            <h5 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: 'var(--text)' }}>Вклад в мою зарплату</h5>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            {contributions.map((c, idx) => {
+                                                const barWidth = maxContribution > 0 ? Math.max((c.total / maxContribution) * 100, 4) : 4;
+                                                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                                                const barColor = idx === 0 ? 'linear-gradient(90deg, #fbbf24, #f59e0b)' : idx === 1 ? 'linear-gradient(90deg, #94a3b8, #64748b)' : idx === 2 ? 'linear-gradient(90deg, #d97706, #b45309)' : 'linear-gradient(90deg, #6366f1, #4f46e5)';
+                                                return (
+                                                    <div key={c.manager} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <span style={{ fontSize: idx < 3 ? '1.3rem' : '0.85rem', minWidth: '30px', textAlign: 'center', fontWeight: '700', color: 'var(--text-muted)' }}>{medal}</span>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                                                                <span style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--text)' }}>{c.manager}</span>
+                                                                <span style={{ fontWeight: '800', fontSize: '1rem', color: '#10b981' }}>+${c.total}</span>
+                                                            </div>
+                                                            <div style={{ height: '8px', background: 'rgba(0,0,0,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                                <div style={{ height: '100%', width: `${barWidth}%`, background: barColor, borderRadius: '4px', transition: 'width 0.8s ease' }} />
+                                                            </div>
+                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '3px' }}>
+                                                                {c.validCount} вал. × ${TeamLeaderSalaryCalculator.VALID_DEPOSIT_BONUS} + {c.invalidCount} невал. × ${TeamLeaderSalaryCalculator.INVALID_DEPOSIT_BONUS}
+                                                                {c.bonusContribution > 0 && ` + бонусы: $${c.bonusContribution}`}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(16,185,129,0.1)', borderRadius: '10px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '600', color: '#10b981' }}>
+                                            Суммарный вклад команды: +${contributions.reduce((s, c) => s + c.total, 0)}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* ===== 4. График динамики зарплаты за 6 месяцев ===== */}
+                            {(() => {
+                                const months = [];
+                                const [cy, cm] = selectedMonth.split('-').map(Number);
+                                for (let i = 5; i >= 0; i--) {
+                                    let my = cy, mm = cm - i;
+                                    while (mm <= 0) { mm += 12; my--; }
+                                    months.push(`${my}-${String(mm).padStart(2, '0')}`);
+                                }
+
+                                const historyData = months.map(mk => {
+                                    const mRecords = DateUtils.filterByMonth(records, mk);
+                                    const mBonuses = DateUtils.filterByMonth(bonuses || [], mk);
+                                    const mGoals = monthlyGoals[mk] || {};
+                                    if (mRecords.length === 0 && mBonuses.length === 0) return { month: mk, label: DateUtils.formatMonthWithYear(mk), base: 0, bonusTotal: 0, total: 0, isEmpty: true };
+                                    const sd = TeamLeaderSalaryCalculator.calculateSalary({ records: mRecords, bonuses: mBonuses, managers, initialManagers, goals: mGoals, selectedMonth: mk });
+                                    const base = sd.baseSalary;
+                                    const bonusTotal = sd.depositsBonus.total + sd.teamTargetBonus.bonus + sd.saleBonusesReward.totalReward + sd.weeklyTargetBonus.totalBonus;
+                                    return { month: mk, label: DateUtils.formatMonthWithYear(mk), base, bonusTotal, total: sd.totalSalary, isEmpty: false };
+                                });
+
+                                const maxTotal = Math.max(...historyData.map(d => d.total), 1);
+                                const hasData = historyData.some(d => !d.isEmpty);
+
+                                return hasData && (
+                                    <div style={{
+                                        marginTop: '1.5rem', padding: '1.5rem',
+                                        background: 'rgba(255,255,255,0.03)', borderRadius: '16px',
+                                        border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                                            <span style={{ fontSize: '1.5rem' }}>📊</span>
+                                            <h5 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: 'var(--text)' }}>Динамика зарплаты (6 месяцев)</h5>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '200px', padding: '0 0.5rem' }}>
+                                            {historyData.map((d, idx) => {
+                                                const barH = d.total > 0 ? Math.max((d.total / maxTotal) * 180, 8) : 4;
+                                                const baseH = d.total > 0 ? (d.base / d.total) * barH : 0;
+                                                const bonusH = barH - baseH;
+                                                const isSelected = d.month === selectedMonth;
+                                                return (
+                                                    <div key={d.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                                        <span style={{ fontSize: '0.7rem', fontWeight: '700', color: d.isEmpty ? 'var(--text-muted)' : 'var(--text)' }}>
+                                                            {d.isEmpty ? '—' : `$${d.total}`}
+                                                        </span>
+                                                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', borderRadius: '6px 6px 0 0', overflow: 'hidden', border: isSelected ? '2px solid var(--primary)' : 'none', boxShadow: isSelected ? '0 0 12px rgba(79,70,229,0.3)' : 'none' }}>
+                                                            <div style={{ height: `${bonusH}px`, background: 'linear-gradient(180deg, #10b981, #059669)', transition: 'height 0.6s ease' }} title={`Бонусы: $${d.bonusTotal}`} />
+                                                            <div style={{ height: `${baseH}px`, background: 'linear-gradient(180deg, #6366f1, #4f46e5)', transition: 'height 0.6s ease' }} title={`Оклад: $${d.base}`} />
+                                                        </div>
+                                                        <span style={{ fontSize: '0.65rem', color: isSelected ? 'var(--primary)' : 'var(--text-muted)', fontWeight: isSelected ? '700' : '400', textAlign: 'center', lineHeight: 1.1 }}>
+                                                            {d.label.split(' ')[0]}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                            <span><span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '2px', background: '#6366f1', marginRight: '4px', verticalAlign: 'middle' }} />Оклад</span>
+                                            <span><span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '2px', background: '#10b981', marginRight: '4px', verticalAlign: 'middle' }} />Бонусы</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* ===== 5. Блок «Упущенная выгода» (FOMO) ===== */}
+                            {(() => {
+                                const teamTargetLost = salaryData.teamTargetBonus.isTargetCompleted ? 0 : TeamLeaderSalaryCalculator.TEAM_TARGET_BONUS;
+                                const weeklyLost = salaryData.weeklyTargetBonus.periods.reduce((sum, p) => sum + (p.isCompleted ? 0 : TeamLeaderSalaryCalculator.WEEKLY_TARGET_BONUS), 0);
+                                const totalLost = teamTargetLost + weeklyLost;
+
+                                if (totalLost === 0) return null;
+
+                                return (
+                                    <div style={{
+                                        marginTop: '1.5rem', padding: '1.5rem',
+                                        background: 'linear-gradient(135deg, rgba(239,68,68,0.08), rgba(220,38,38,0.05))',
+                                        borderRadius: '16px',
+                                        border: '2px solid rgba(239,68,68,0.25)',
+                                        backdropFilter: 'blur(10px)'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                                            <span style={{ fontSize: '1.5rem' }}>🚨</span>
+                                            <h5 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#ef4444' }}>Упущенная выгода</h5>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                                            {teamTargetLost > 0 && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.15)' }}>
+                                                    <span style={{ fontSize: '0.9rem', color: 'var(--text)' }}>Из-за невыполненного плана команды</span>
+                                                    <span style={{ fontWeight: '800', fontSize: '1.1rem', color: '#ef4444' }}>-${teamTargetLost}</span>
+                                                </div>
+                                            )}
+                                            {salaryData.weeklyTargetBonus.periods.map((p, idx) => (
+                                                !p.isCompleted && p.target > 0 && (
+                                                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.08)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.15)' }}>
+                                                        <span style={{ fontSize: '0.9rem', color: 'var(--text)' }}>Проваленный таргет периода {p.period} ({p.validCount}/{p.target})</span>
+                                                        <span style={{ fontWeight: '800', fontSize: '1.1rem', color: '#ef4444' }}>-${TeamLeaderSalaryCalculator.WEEKLY_TARGET_BONUS}</span>
+                                                    </div>
+                                                )
+                                            ))}
+                                        </div>
+                                        <div style={{
+                                            padding: '1rem', borderRadius: '12px',
+                                            background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(220,38,38,0.1))',
+                                            border: '1px solid rgba(239,68,68,0.3)',
+                                            textAlign: 'center'
+                                        }}>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Итого вы теряете в этом месяце</div>
+                                            <div style={{ fontSize: '2rem', fontWeight: '900', color: '#ef4444' }}>-${totalLost}</div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                                Потенциальная зарплата: <strong style={{ color: '#10b981' }}>${salaryData.totalSalary + totalLost}</strong> вместо <strong>${salaryData.totalSalary}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
                     </div>
                 </div>
             );
@@ -8036,7 +8692,6 @@
         const SettingsTab = () => {
             const { records, tariffs, monthlyGoals, plannedDays, managers, initialManagers, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, managerBaseRates, managerTariffs, managerClientsCount, updateTariff, resetTariffs, updateMonthlyGoal, initializeMonthGoals, updatePlannedDays, updateInvalidBonus, updateTeamLeaderPerFTD, updateTeamPlanBonusAmount, addManager, deleteManager, updateManagerBaseRate, updateManagerTariffs, updateManagerClientsCount, exportData, importData, disabledAgents, toggleAgentDisabled, isAgentDisabled, penalties, bonuses, attendance } = useData();
             const { addNotification } = useNotification();
-            const { notificationsEnabled, permissionStatus, toggleNotifications, isSupported: notificationsSupported } = usePlanNotifications();
             const [isAuthorized, setIsAuthorized] = useState(() => {
                 const stored = sessionStorage.getItem('settingsAuthorized');
                 return stored === 'true';
@@ -8081,30 +8736,11 @@
                 }
             }, [managerClientsCount, selectedMonth, isAuthorized]);
             
-            // Проверка пароля через API или локально
-            const verifyPasswordViaAPI = async (pass, type) => {
-                try {
-                    const response = await fetch('/api/verify-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ password: pass, type })
-                    });
-                    const data = await response.json();
-                    return { success: data.success, isApiAvailable: true };
-                } catch (error) {
-                    console.log('API недоступен, используем локальную проверку');
-                    return { success: false, isApiAvailable: false };
-                }
-            };
-            
             const handlePasswordSubmit = async (e) => {
                 e.preventDefault();
                 setError('');
                 
-                // Сначала пробуем API
-                const apiResult = await verifyPasswordViaAPI(password, 'settings');
-                const isValid = apiResult.success || 
-                    (!apiResult.isApiAvailable && password === TEAM_LEADER_SALARY_PASSWORD);
+                const isValid = password === TEAM_LEADER_SALARY_PASSWORD;
                 
                 if (isValid) {
                     setIsAuthorized(true);
@@ -8550,8 +9186,8 @@
                                 const invalidCount = managerDepositsStatsForMonth[manager]?.invalid ?? 0;
                                 const totalDeposits = validCount + invalidCount;
                                 const clientsNum = parseInt(clients, 10) || 0;
-                                const conversionValidPercent = clientsNum > 0 ? MathUtils.round((validCount / clientsNum) * 100) : null;
-                                const conversionTotalPercent = clientsNum > 0 ? MathUtils.round((totalDeposits / clientsNum) * 100) : null;
+                                const conversionValidPercent = clientsNum > 0 ? MathUtils.roundToDecimals((validCount / clientsNum) * 100, 1) : null;
+                                const conversionTotalPercent = clientsNum > 0 ? MathUtils.roundToDecimals((totalDeposits / clientsNum) * 100, 1) : null;
                                 const conversionColor = (p) => p === null ? 'var(--text-muted)' : (p >= 100 ? '#10b981' : p >= 50 ? '#f59e0b' : '#ef4444');
                                 return (
                                     <div key={manager} className="manager-item" style={{flexWrap: 'wrap', gap: '0.75rem'}}>
@@ -8774,98 +9410,6 @@
                         </p>
                     </div>
                     
-                    {/* Секция Push-уведомлений */}
-                    <div className="section">
-                        <h3>🔔 Push-уведомления</h3>
-                        <p style={CommonStyles.mutedText}>
-                            Получайте уведомления о выполнении планов менеджерами
-                        </p>
-                        
-                        {!notificationsSupported ? (
-                            <div style={{ 
-                                padding: '1rem', 
-                                background: '#fef3c7', 
-                                borderRadius: '8px', 
-                                border: '1px solid #f59e0b',
-                                marginTop: '1rem'
-                            }}>
-                                ⚠️ Ваш браузер не поддерживает Push-уведомления
-                            </div>
-                        ) : (
-                            <div style={{ marginTop: '1rem' }}>
-                                <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    justifyContent: 'space-between',
-                                    padding: '1rem',
-                                    background: notificationsEnabled ? '#dcfce7' : 'var(--background)',
-                                    borderRadius: '8px',
-                                    border: `1px solid ${notificationsEnabled ? '#86efac' : 'var(--border)'}`,
-                                    marginBottom: '1rem'
-                                }}>
-                                    <div>
-                                        <strong style={{ display: 'block', marginBottom: '0.25rem' }}>
-                                            {notificationsEnabled ? '✅ Уведомления включены' : '🔕 Уведомления отключены'}
-                                        </strong>
-                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                            {notificationsEnabled 
-                                                ? 'Вы будете получать уведомления при выполнении плана' 
-                                                : 'Включите для получения уведомлений о достижении планов'}
-                                        </span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={async () => {
-                                            const result = await toggleNotifications();
-                                            if (result.success) {
-                                                addNotification(
-                                                    notificationsEnabled 
-                                                        ? 'Уведомления отключены' 
-                                                        : 'Уведомления включены',
-                                                    'success'
-                                                );
-                                            } else if (result.reason === 'denied') {
-                                                addNotification(
-                                                    'Уведомления заблокированы в настройках браузера',
-                                                    'error'
-                                                );
-                                            }
-                                        }}
-                                        className={`btn ${notificationsEnabled ? 'btn-danger' : 'btn-primary'}`}
-                                    >
-                                        {notificationsEnabled ? '🔕 Отключить' : '🔔 Включить'}
-                                    </button>
-                                </div>
-                                
-                                {permissionStatus === 'denied' && (
-                                    <div style={{ 
-                                        padding: '0.75rem', 
-                                        background: '#fee2e2', 
-                                        borderRadius: '8px', 
-                                        border: '1px solid #fca5a5',
-                                        fontSize: '0.9rem'
-                                    }}>
-                                        ❌ Уведомления заблокированы. Разрешите их в настройках браузера (нажмите на иконку 🔒 в адресной строке).
-                                    </div>
-                                )}
-                                
-                                <div style={{ 
-                                    marginTop: '1rem', 
-                                    padding: '0.75rem', 
-                                    background: 'rgba(79, 70, 229, 0.1)', 
-                                    borderRadius: '8px',
-                                    fontSize: '0.85rem'
-                                }}>
-                                    <strong>📋 Типы уведомлений:</strong>
-                                    <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.25rem' }}>
-                                        <li>🎉 Выполнение плана менеджером</li>
-                                        <li>📈 Достижение 90% от плана</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    
                     <div className="section">
                         <h3>🔒 Резервное копирование</h3>
                         <p style={CommonStyles.mutedText}>
@@ -8909,6 +9453,18 @@
                                                         onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
                                                         required
                                                     />
+                                                    <div style={{ display: 'flex', gap: '3px', marginTop: '4px' }}>
+                                                        {Object.entries(LEAD_COLORS).map(([key, cfg]) => (
+                                                            <button key={key} type="button"
+                                                                onClick={() => setEditForm({ ...editForm, leadColor: editForm.leadColor === key ? '' : key, leadColorReasons: editForm.leadColor === key ? [] : ['Выбрано вручную'] })}
+                                                                style={{
+                                                                    width: '18px', height: '18px', borderRadius: '50%', border: editForm.leadColor === key ? '2px solid var(--text)' : '1px solid #ccc',
+                                                                    background: cfg.color, cursor: 'pointer', padding: 0
+                                                                }}
+                                                                title={cfg.label}
+                                                            />
+                                                        ))}
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     <select
@@ -8931,7 +9487,14 @@
                                                 <td>
                                                     <select
                                                         value={editForm.validity}
-                                                        onChange={(e) => setEditForm({ ...editForm, validity: e.target.value })}
+                                                        onChange={(e) => {
+                                                            const newValidity = e.target.value;
+                                                            setEditForm({ 
+                                                                ...editForm, 
+                                                                validity: newValidity,
+                                                                invalidReason: newValidity !== 'invalid' ? '' : (editForm.invalidReason || '')
+                                                            });
+                                                        }}
                                                         required
                                                     >
                                                         <option value="">Выберите</option>
@@ -8939,7 +9502,19 @@
                                                         <option value="invalid">Невалидный</option>
                                                         <option value="pending">На рассмотрении</option>
                                                         <option value="not_counted">Не засчитано</option>
+                                                        <option value="not_transferred">Не переданный</option>
                                                     </select>
+                                                    {editForm.validity === 'invalid' && (
+                                                        <select
+                                                            value={editForm.invalidReason || ''}
+                                                            onChange={(e) => setEditForm({ ...editForm, invalidReason: e.target.value })}
+                                                            required
+                                                            style={{ marginTop: '4px', width: '100%' }}
+                                                        >
+                                                            <option value="">Причина...</option>
+                                                            {INVALID_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                                        </select>
+                                                    )}
                                                 </td>
                                                 <td>
                                                     <select
@@ -9007,7 +9582,19 @@
                         />
                                         ) : (
                                             <>
-                                                <td>{DateUtils.formatDateShort(record.date)}</td>
+                                                <td>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        {record.leadColor && LEAD_COLORS[record.leadColor] && (
+                                                            <span style={{
+                                                                width: '10px', height: '10px', borderRadius: '50%',
+                                                                background: LEAD_COLORS[record.leadColor].color,
+                                                                display: 'inline-block', flexShrink: 0,
+                                                                boxShadow: `0 0 4px ${LEAD_COLORS[record.leadColor].color}60`
+                                                            }} title={`${LEAD_COLORS[record.leadColor].label}${record.leadColorReasons && record.leadColorReasons.length > 0 ? ': ' + record.leadColorReasons.join(', ') : ''}`} />
+                                                        )}
+                                                        {DateUtils.formatDateShort(record.date)}
+                                                    </div>
+                                                </td>
                             <td style={CommonStyles.badgesRow}>
                                 {record.manager}
                                 <ManagerBadges manager={record.manager} initialManagers={initialManagers} />
@@ -9018,13 +9605,20 @@
                                                         record.validity === 'valid' ? 'success' : 
                                                         record.validity === 'invalid' ? 'danger' : 
                                                         record.validity === 'not_counted' ? 'secondary' :
+                                                        record.validity === 'not_transferred' ? 'secondary' :
                                                         'warning'
                                                     }>
                                                         {record.validity === 'valid' ? 'Валидный' : 
                                                          record.validity === 'invalid' ? 'Невалидный' : 
                                                          record.validity === 'not_counted' ? 'Не засчитано' :
+                                                         record.validity === 'not_transferred' ? 'Не переданный' :
                                                          'На рассмотрении'}
                                                     </Badge>
+                                                    {record.validity === 'invalid' && record.invalidReason && (
+                                                        <div style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '2px', fontStyle: 'italic' }}>
+                                                            {record.invalidReason}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td>{record.traffic || trafficOptions[0]}</td>
                                                 <td>{record.country || countryOptions[0]}</td>
@@ -9044,18 +9638,30 @@
                                                     </button>
                                                 </td>
                                                 <td>
-                                                    <button
-                                                        className="btn btn-primary btn-sm btn-animated active-scale"
-                                    onClick={() => onEdit(record)}
-                                                    >
-                                                        <span className="icon-bounce">✏️</span> Редактировать
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-danger btn-sm btn-animated active-scale"
-                                                        onClick={() => onDelete(record.id)}
-                                                    >
-                                                        <span className="icon-bounce">🗑️</span> Удалить
-                                                    </button>
+                                                    <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                                                        <button
+                                                            className="btn btn-primary btn-sm btn-animated active-scale"
+                                                            onClick={() => onEdit(record)}
+                                                        >
+                                                            <span className="icon-bounce">✏️</span> Редактировать
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-danger btn-sm btn-animated active-scale"
+                                                            onClick={() => onDelete(record.id)}
+                                                        >
+                                                            <span className="icon-bounce">🗑️</span> Удалить
+                                                        </button>
+                                                    </div>
+                                                    {(record.createdAt || record.modifiedAt) && (
+                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', lineHeight: '1.3' }}>
+                                                            {record.createdAt && (
+                                                                <span>Создано: {new Date(record.createdAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                                            )}
+                                                            {record.modifiedAt && (
+                                                                <span> | Изменено: {new Date(record.modifiedAt).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </>
                                         )}
@@ -9064,7 +9670,7 @@
         });
         
         const SortableTable = ({ onDelete, monthFilter }) => {
-            const { records, sortConfig, setSortConfig, updateRecord, managers, initialManagers, trafficOptions, countryOptions } = useData();
+            const { records, sortConfig, setSortConfig, updateRecord, managers, initialManagers, trafficOptions, countryOptions, managerFilter: globalManagerFilter } = useData();
             const { addNotification } = useNotification();
             const [search, setSearch] = useState('');
             const [managerFilter, setManagerFilter] = useState('');
@@ -9074,12 +9680,15 @@
             const [showFilters, setShowFilters] = useState(false);
             const [editId, setEditId] = useState(null);
             const [editForm, setEditForm] = useState({});
+            const effectiveManagerFilter = managerFilter || globalManagerFilter || '';
             
             // КУС модальное окно
             const [kusModalOpen, setKusModalOpen] = useState(false);
             const [kusRecord, setKusRecord] = useState(null);
             const [kusEditText, setKusEditText] = useState('');
             const [isKusEditing, setIsKusEditing] = useState(false);
+            const PAGE_SIZE = 50;
+            const [page, setPage] = useState(0);
             
             const openKusModal = useCallback((record) => {
                 setKusRecord(record);
@@ -9090,7 +9699,13 @@
             
             const saveKus = useCallback(async () => {
                 if (kusRecord) {
-                    await updateRecord(kusRecord.id, { ...kusRecord, kus: kusEditText });
+                    const result = analyzeLeadColor(kusEditText);
+                    await updateRecord(kusRecord.id, { 
+                        ...kusRecord, 
+                        kus: kusEditText,
+                        leadColor: result.color || kusRecord.leadColor,
+                        leadColorReasons: result.reasons || []
+                    });
                     addNotification('КУС сохранён', 'success');
                     setKusModalOpen(false);
                     setKusRecord(null);
@@ -9121,9 +9736,9 @@
                     );
                 }
                 
-                // Фильтр по менеджеру
-                if (managerFilter) {
-                    filtered = filtered.filter(record => record.manager === managerFilter);
+                // Фильтр по менеджеру (локальному или глобальному)
+                if (effectiveManagerFilter) {
+                    filtered = filtered.filter(record => record.manager === effectiveManagerFilter);
                 }
                 
                 // Фильтр по валидности
@@ -9142,7 +9757,7 @@
                 }
                 
                 return filtered;
-            }, [records, search, monthFilter, managerFilter, validityFilter, trafficFilter, countryFilter]);
+            }, [records, search, monthFilter, managerFilter, globalManagerFilter, validityFilter, trafficFilter, countryFilter]);
             
             const resetFilters = useCallback(() => {
                 setSearch('');
@@ -9165,6 +9780,14 @@
             const sortedRecords = useMemo(() => {
                 return SortUtils.sortRecords(filteredRecords, sortConfig);
             }, [filteredRecords, sortConfig]);
+            const totalPages = Math.max(1, Math.ceil(sortedRecords.length / PAGE_SIZE));
+            const paginatedRecords = useMemo(() => {
+                const start = page * PAGE_SIZE;
+                return sortedRecords.slice(start, start + PAGE_SIZE);
+            }, [sortedRecords, page]);
+            useEffect(() => {
+                if (page >= totalPages) setPage(0);
+            }, [page, totalPages]);
             
             const handleSort = useCallback((key) => {
                 const direction = SortUtils.getSortDirection(key, sortConfig);
@@ -9300,6 +9923,7 @@
                                         <option value="invalid">Невалидный</option>
                                         <option value="pending">На рассмотрении</option>
                                         <option value="not_counted">Не засчитано</option>
+                                        <option value="not_transferred">Не переданный</option>
                                     </select>
                                 </div>
                                 <div className="form-group">
@@ -9375,11 +9999,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {sortedRecords.map((record, index) => (
+                            {paginatedRecords.map((record, index) => (
                                 <RecordTableRow
                                     key={record.id}
                                     record={record}
-                                    index={index}
+                                    index={page * PAGE_SIZE + index}
                                     isEditing={editId === record.id}
                                     editForm={editForm}
                                     setEditForm={setEditForm}
@@ -9396,6 +10020,32 @@
                             ))}
                         </tbody>
                     </table>
+                    {sortedRecords.length > PAGE_SIZE && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1rem', padding: '0.75rem', background: 'var(--background)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                Показано {page * PAGE_SIZE + 1}—{Math.min((page + 1) * PAGE_SIZE, sortedRecords.length)} из {sortedRecords.length}
+                            </span>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    disabled={page === 0}
+                                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                                >
+                                    ← Назад
+                                </button>
+                                <span style={{ fontSize: '0.9rem' }}>Стр. {page + 1} из {totalPages}</span>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    disabled={page >= totalPages - 1}
+                                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                                >
+                                    Вперёд →
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     
                     {/* Модальное окно КУС */}
                     {kusModalOpen && kusRecord && (
@@ -9437,8 +10087,18 @@
                                     paddingBottom: '0.75rem',
                                     borderBottom: '2px solid var(--border)'
                                 }}>
-                                    <h3 style={{ margin: 0 }}>
+                                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         📋 КУС — {kusRecord.clientId}
+                                        {kusRecord.leadColor && LEAD_COLORS[kusRecord.leadColor] && (
+                                            <span style={{
+                                                fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', fontWeight: '600',
+                                                background: LEAD_COLORS[kusRecord.leadColor].bg,
+                                                color: LEAD_COLORS[kusRecord.leadColor].color,
+                                                border: `1px solid ${LEAD_COLORS[kusRecord.leadColor].border}`
+                                            }}>
+                                                {LEAD_COLORS[kusRecord.leadColor].label}
+                                            </span>
+                                        )}
                                     </h3>
                                     <button 
                                         onClick={closeKusModal}
@@ -9466,7 +10126,11 @@
                                         {kusRecord.validity === 'valid' ? '✅ Валидный' : 
                                          kusRecord.validity === 'invalid' ? '❌ Невалидный' : 
                                          kusRecord.validity === 'not_counted' ? '⚪ Не засчитано' :
+                                         kusRecord.validity === 'not_transferred' ? '🚫 Не переданный' :
                                          '⏳ На рассмотрении'}
+                                        {kusRecord.validity === 'invalid' && kusRecord.invalidReason && (
+                                            ` (${kusRecord.invalidReason})`
+                                        )}
                                     </span>
                                 </div>
                                 
@@ -9599,23 +10263,6 @@
             const [loadingStatusText, setLoadingStatusText] = useState('');
             const { login } = useUser();
             
-            // Проверка через API (Vercel) или локально (fallback)
-            const verifyCredentialsViaAPI = async (user, pass) => {
-                try {
-                    const response = await fetch('/api/auth', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: user, password: pass })
-                    });
-                    const data = await response.json();
-                    return { success: data.success, isApiAvailable: true };
-                } catch (error) {
-                    // API недоступен — используем локальную проверку
-                    console.log('API недоступен, используем локальную проверку');
-                    return { success: false, isApiAvailable: false };
-                }
-            };
-            
             const verifyCredentialsLocally = (user, pass) => {
                 const userRecord = users[user];
                 if (!userRecord) return false;
@@ -9631,10 +10278,7 @@
                 
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
-                // Сначала пробуем API, затем локальную проверку
-                const apiResult = await verifyCredentialsViaAPI(username, password);
-                const isPasswordValid = apiResult.success || 
-                    (!apiResult.isApiAvailable && verifyCredentialsLocally(username, password));
+                const isPasswordValid = verifyCredentialsLocally(username, password);
                 
                 if (isPasswordValid) {
                     login(username);
@@ -9642,7 +10286,6 @@
                     
                     const statusMessages = [
                         'Проверка учетных данных...',
-                        'Подключение к серверу...',
                         'Загрузка данных...',
                         'Инициализация системы...',
                         'Почти готово...'
@@ -9652,16 +10295,14 @@
                         await new Promise(resolve => setTimeout(resolve, 30));
                         setLoadingProgress(i);
                         
-                        if (i < 20) {
+                        if (i < 25) {
                             setLoadingStatusText(statusMessages[0]);
-                        } else if (i < 40) {
+                        } else if (i < 50) {
                             setLoadingStatusText(statusMessages[1]);
-                        } else if (i < 60) {
+                        } else if (i < 75) {
                             setLoadingStatusText(statusMessages[2]);
-                        } else if (i < 80) {
-                            setLoadingStatusText(statusMessages[3]);
                         } else {
-                            setLoadingStatusText(statusMessages[4]);
+                            setLoadingStatusText(statusMessages[3]);
                         }
                     }
                     
@@ -9804,7 +10445,9 @@
                 invalidBonusPerFTD, 
                 teamLeaderPerFTD, 
                 teamPlanBonusAmount,
-                createBackup
+                createBackup,
+                managerFilter,
+                setManagerFilter
             } = useData();
             
             const tabs = useMemo(() => [
@@ -9918,6 +10561,53 @@
                         <div className="header">
                             <h1 className="animate-scale-in">📊 FTD Statistics Tracker</h1>
                             <p className="animate-fade-in">Современная система учета статистики и расчета зарплат менеджеров</p>
+                            <div
+                                style={{
+                                    marginTop: '1rem',
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: '1rem',
+                                    justifyContent: 'center',
+                                    alignItems: 'center'
+                                }}
+                            >
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                    <span style={{ fontSize: '0.85rem', opacity: 0.9 }}>Фильтр по менеджеру</span>
+                                    <select
+                                        value={managerFilter || ''}
+                                        onChange={(e) => setManagerFilter(e.target.value)}
+                                        style={{
+                                            minWidth: '200px',
+                                            padding: '0.5rem 0.75rem',
+                                            borderRadius: '8px',
+                                            border: '1px solid rgba(255, 255, 255, 0.6)',
+                                            background: 'rgba(255, 255, 255, 0.9)',
+                                            color: '#111827',
+                                            fontSize: '0.9rem',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <option value="">Все менеджеры</option>
+                                        {managers.map(m => (
+                                            <option key={m} value={m}>{m}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={!managerFilter}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setManagerFilter('');
+                                            } else if (!managerFilter && managers.length > 0) {
+                                                setManagerFilter(managers[0]);
+                                            }
+                                        }}
+                                    />
+                                    Все менеджеры
+                                </label>
+                            </div>
                             <button 
                                 className="btn btn-danger btn-animated active-scale" 
                                 style={{position: 'absolute', top: '1rem', right: '1rem'}} 

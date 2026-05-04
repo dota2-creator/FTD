@@ -3012,7 +3012,7 @@
         const DataStateContext = createContext(null);
         const DataActionsContext = createContext(null);
         const DataProvider = ({ children }) => {
-            const { userRole: dataProviderUserRole } = useUser();
+            const { userRole: dataProviderUserRole, userDisplayName: dataProviderUserDisplayName } = useUser();
             const isAdminRole = dataProviderUserRole === 'admin';
             const [records, setRecords] = useState([]);
             const [penalties, setPenalties] = useState([]);
@@ -3185,7 +3185,11 @@
                 await StorageUtils.setItem('plannedDays', newPlanned);
             };
             const updateAttendance = async (monthKey, manager, dateStr, value) => {
-                if (!isAdminRole) return;
+                if (!isAdminRole) {
+                    if (!dataProviderUserDisplayName || manager !== dataProviderUserDisplayName) {
+                        return;
+                    }
+                }
                 let newAttendance = { ...attendance };
                 if (!newAttendance[monthKey]) newAttendance[monthKey] = {};
                 if (!newAttendance[monthKey][manager]) newAttendance[monthKey][manager] = {};
@@ -10619,7 +10623,7 @@
             const allTabs = useMemo(() => [
                 { id: 'general-plan', label: '🏆 Общий план', component: GeneralPlanTab, roles: ['admin', 'user'] },
                 { id: 'data-entry', label: 'Ввод данных', component: DataEntryTab, roles: ['admin'] },
-                { id: 'attendance', label: '📅 Посещаемость', component: AttendanceTab, roles: ['admin'] },
+                { id: 'attendance', label: '📅 Посещаемость', component: AttendanceTab, roles: ['admin', 'user'] },
                 { id: 'statistics', label: 'Статистика', component: StatisticsTab, roles: ['admin', 'user'] },
                 { id: 'monthly-stats', label: 'По месяцам', component: MonthlyStatsTab, roles: ['admin', 'user'] },
                 { id: 'team-leader-salary', label: '💰 Зарплата тим-лидера', component: TeamLeaderSalaryTab, roles: ['admin'] },

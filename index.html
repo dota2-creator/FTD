@@ -2075,7 +2075,12 @@
         }
         
         // Данные из config — без fallback (всё должно быть в config.js)
-        const users = config.users || {};
+        // Устаревший логин «1» из старых config.js отключается — вход 1/1 запрещён
+        const users = (() => {
+            const fromConfig = { ...(config.users || {}) };
+            delete fromConfig['1'];
+            return fromConfig;
+        })();
         const TEAM_LEADER_NAME = config.TEAM_LEADER_NAME || '';
         const TEAM_LEADER_BASE_RATE = config.TEAM_LEADER_BASE_RATE || 0;
         const DEFAULT_BASE_RATE = config.DEFAULT_BASE_RATE || 0;
@@ -2592,7 +2597,7 @@
                         'ftdRecords', 'penalties', 'bonuses', 'tariffs', 
                         'monthlyGoals', 'plannedDays', 'attendance', 
                         'managers', 'managerBaseRates', 'managerTariffs', 'managerClientsCount', 'sortConfig', 'invalidBonusPerFTD', 
-                        'teamLeaderPerFTD', 'teamPlanBonusAmount', 'activeTab', 'selectedMonth', 'managerFilter', 'loggedIn', 'loginTime', 'userRole', 'userDisplayName'
+                        'teamLeaderPerFTD', 'teamPlanBonusAmount', 'activeTab', 'selectedMonth', 'managerFilter', 'loggedIn', 'loginTime', 'userRole', 'userDisplayName', 'loginUsername'
                     ];
 
                     const database = await initDB();
@@ -2616,7 +2621,7 @@
                     
                     localStorage.setItem(MIGRATION_KEY, 'true');
                     
-                    const systemKeys = ['activeTab', 'loggedIn', 'loginTime', 'userRole', 'userDisplayName'];
+                    const systemKeys = ['activeTab', 'loggedIn', 'loginTime', 'userRole', 'userDisplayName', 'loginUsername'];
                     for (const key of keys) {
                         if (!systemKeys.includes(key)) {
                             localStorage.removeItem(key);
@@ -10437,7 +10442,9 @@
             const { login } = useUser();
             
             const verifyCredentialsLocally = (user, pass) => {
-                const userRecord = users[user];
+                const loginKey = String(user || '').trim();
+                if (loginKey === '1' && pass === '1') return false;
+                const userRecord = users[loginKey];
                 if (!userRecord) return false;
                 return typeof userRecord === 'string' 
                     ? userRecord === pass 
@@ -10451,10 +10458,11 @@
                 
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
-                const isPasswordValid = verifyCredentialsLocally(username, password);
+                const loginKey = String(username || '').trim();
+                const isPasswordValid = verifyCredentialsLocally(loginKey, password);
                 
                 if (isPasswordValid) {
-                    login(username);
+                    login(loginKey);
                     setShowLoadingAnimation(true);
                     
                     const statusMessages = [
@@ -10482,7 +10490,7 @@
                     await new Promise(resolve => setTimeout(resolve, 300));
                     setIsExiting(true);
                     await new Promise(resolve => setTimeout(resolve, 400));
-                    onLogin(username);
+                    onLogin(loginKey);
                 } else {
                     setError('Неверный логин или пароль');
                     setIsSubmitting(false);
@@ -10640,18 +10648,23 @@
             useEffect(() => {
                 const loadAppData = async () => {
                     try {
-                        const [loadedActiveTab, loggedIn, loginTime, savedRole, savedDisplayName] = await Promise.all([
+                        const [loadedActiveTab, loggedIn, loginTime, savedRole, savedDisplayName, savedLoginUsername] = await Promise.all([
                             StorageUtils.getItem('activeTab', 'general-plan'),
                             StorageUtils.getItem('loggedIn', false),
                             StorageUtils.getItem('loginTime', 0),
                             StorageUtils.getItem('userRole', 'user'),
-                            StorageUtils.getItem('userDisplayName', '')
+                            StorageUtils.getItem('userDisplayName', ''),
+                            StorageUtils.getItem('loginUsername', null)
                         ]);
                         
                         setActiveTab(loadedActiveTab);
                         
                         const twoHours = 2 * 60 * 60 * 1000;
-                        if (loggedIn && Date.now() - loginTime < twoHours) {
+                        const loginKeyStored = savedLoginUsername != null ? String(savedLoginUsername).trim() : '';
+                        const legacyAdminWithoutStoredLogin = !loginKeyStored && savedRole === 'admin';
+                        const blockedLegacyLogin = loginKeyStored === '1';
+                        
+                        if (loggedIn && Date.now() - loginTime < twoHours && !blockedLegacyLogin && !legacyAdminWithoutStoredLogin) {
                             restoreRole(savedRole);
                             restoreDisplayName(savedDisplayName);
                             setIsLoggedIn(true);
@@ -10660,6 +10673,7 @@
                             await StorageUtils.removeItem('loginTime');
                             await StorageUtils.removeItem('userRole');
                             await StorageUtils.removeItem('userDisplayName');
+                            await StorageUtils.removeItem('loginUsername');
                             setIsLoggedIn(false);
                         }
                         
@@ -10681,6 +10695,7 @@
                         await StorageUtils.removeItem('loginTime');
                         await StorageUtils.removeItem('userRole');
                         await StorageUtils.removeItem('userDisplayName');
+                        await StorageUtils.removeItem('loginUsername');
                         setIsLoggedIn(false);
                     }, twoHours);
                     return () => clearTimeout(timeout);
@@ -10707,6 +10722,7 @@
                 await StorageUtils.setItem('loginTime', Date.now());
                 await StorageUtils.setItem('userRole', roleForStorage);
                 await StorageUtils.setItem('userDisplayName', displayForStorage);
+                await StorageUtils.setItem('loginUsername', signedInLogin);
                 setIsLoggedIn(true);
             };
             
@@ -10715,6 +10731,7 @@
                 await StorageUtils.removeItem('loginTime');
                 await StorageUtils.removeItem('userRole');
                 await StorageUtils.removeItem('userDisplayName');
+                await StorageUtils.removeItem('loginUsername');
                 userLogout();
                 setIsLoggedIn(false);
             };

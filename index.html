@@ -2589,7 +2589,7 @@
                         'ftdRecords', 'penalties', 'bonuses', 'tariffs', 
                         'monthlyGoals', 'plannedDays', 'attendance', 
                         'managers', 'managerBaseRates', 'managerTariffs', 'managerClientsCount', 'sortConfig', 'invalidBonusPerFTD', 
-                        'teamLeaderPerFTD', 'teamPlanBonusAmount', 'activeTab', 'selectedMonth', 'managerFilter', 'loggedIn', 'loginTime'
+                        'teamLeaderPerFTD', 'teamPlanBonusAmount', 'activeTab', 'selectedMonth', 'managerFilter', 'loggedIn', 'loginTime', 'userRole', 'userDisplayName'
                     ];
 
                     const database = await initDB();
@@ -2613,7 +2613,7 @@
                     
                     localStorage.setItem(MIGRATION_KEY, 'true');
                     
-                    const systemKeys = ['activeTab', 'loggedIn', 'loginTime'];
+                    const systemKeys = ['activeTab', 'loggedIn', 'loginTime', 'userRole', 'userDisplayName'];
                     for (const key of keys) {
                         if (!systemKeys.includes(key)) {
                             localStorage.removeItem(key);
@@ -2965,28 +2965,43 @@
             );
         };
         
-        const UserContext = createContext({ currentUser: null, login: () => {}, logout: () => {} });
+        const UserContext = createContext({ currentUser: null, userRole: 'user', userDisplayName: '', isAdmin: false, login: () => {}, logout: () => {} });
         const UserProvider = ({ children }) => {
             const [currentUser, setCurrentUser] = useState(null);
+            const [userRole, setUserRole] = useState('user');
+            const [userDisplayName, setUserDisplayName] = useState('');
+            
+            const isAdmin = userRole === 'admin';
             
             const login = (username) => {
-                const user = users[username];
-                if (user) {
-                    const userData = {
-                        username
-                    };
-                    setCurrentUser(userData);
-                    return true;
-                }
-                return false;
+                const userRecord = users[username];
+                if (!userRecord) return false;
+                const role = (typeof userRecord === 'object' && userRecord.role) ? userRecord.role : 'user';
+                const fullName = (typeof userRecord === 'object' && userRecord.displayName)
+                    ? userRecord.displayName
+                    : username;
+                setCurrentUser({ username });
+                setUserRole(role);
+                setUserDisplayName(fullName);
+                return true;
+            };
+            
+            const restoreRole = (role) => {
+                setUserRole(role || 'user');
+            };
+            
+            const restoreDisplayName = (name) => {
+                setUserDisplayName(name || '');
             };
             
             const logout = () => {
                 setCurrentUser(null);
+                setUserRole('user');
+                setUserDisplayName('');
             };
             
             return (
-                <UserContext.Provider value={{ currentUser, login, logout }}>
+                <UserContext.Provider value={{ currentUser, userRole, userDisplayName, isAdmin, login, logout, restoreRole, restoreDisplayName }}>
                     {children}
                 </UserContext.Provider>
             );
@@ -2997,6 +3012,8 @@
         const DataStateContext = createContext(null);
         const DataActionsContext = createContext(null);
         const DataProvider = ({ children }) => {
+            const { userRole: dataProviderUserRole } = useUser();
+            const isAdminRole = dataProviderUserRole === 'admin';
             const [records, setRecords] = useState([]);
             const [penalties, setPenalties] = useState([]);
             const [bonuses, setBonuses] = useState([]);
@@ -3259,6 +3276,7 @@
                 }
             };
             const updateTariff = async (index, field, value) => {
+                if (!isAdminRole) return null;
                 const newTariffs = [...tariffs];
                 newTariffs[index][field] = parseFloat(value) || 0;
                 const validation = Validator.validateTariff(newTariffs[index], index, newTariffs);
@@ -3270,26 +3288,30 @@
                 return null;
             };
             const resetTariffs = async () => {
+                if (!isAdminRole) return;
                 setTariffs([...DEFAULT_TARIFFS]);
                 await StorageUtils.setItem('tariffs', [...DEFAULT_TARIFFS]);
             };
             const updateInvalidBonus = async (value) => {
+                if (!isAdminRole) return;
                 const newValue = parseFloat(value) || 0;
                 setInvalidBonusPerFTD(newValue);
                 await StorageUtils.setItem('invalidBonusPerFTD', newValue);
             };
             const updateTeamLeaderPerFTD = async (value) => {
+                if (!isAdminRole) return;
                 const newValue = parseFloat(value) || 0;
                 setTeamLeaderPerFTD(newValue);
                 await StorageUtils.setItem('teamLeaderPerFTD', newValue);
             };
             const updateTeamPlanBonusAmount = async (value) => {
+                if (!isAdminRole) return;
                 const newValue = parseFloat(value) || 0;
                 setTeamPlanBonusAmount(newValue);
                 await StorageUtils.setItem('teamPlanBonusAmount', newValue);
             };
             const addManager = async (name, baseRateValue, monthKey = null, selectedTariffs = null) => {
-                if (!name) return;
+                if (!isAdminRole || !name) return;
                 const baseTariffRate = tariffs?.[0]?.baseRate ?? DEFAULT_BASE_RATE;
                 const defaultBaseRateForNewManager = name === TEAM_LEADER_NAME ? TEAM_LEADER_BASE_RATE : baseTariffRate;
                 const parsedBaseRate = parseFloat(baseRateValue);
@@ -3330,6 +3352,7 @@
                 }
             };
             const deleteManager = async (name) => {
+                if (!isAdminRole) return;
                 const currentMonthKey = DateUtils.getCurrentMonthKey();
                 
                 // Сохраняем информацию о том, когда менеджер был удален
@@ -3383,6 +3406,7 @@
                 // Базовая ставка остается в БД для истории
             };
             const updateManagerBaseRate = async (manager, value) => {
+                if (!isAdminRole) return false;
                 const numericValue = parseFloat(value);
                 if (Number.isNaN(numericValue) || numericValue < 0) {
                     return false;
@@ -3393,6 +3417,7 @@
                 return true;
             };
             const updateManagerTariffs = async (manager, tariffs) => {
+                if (!isAdminRole) return false;
                 if (!Array.isArray(tariffs)) {
                     return false;
                 }
@@ -3402,6 +3427,7 @@
                 return true;
             };
             const updateManagerClientsCount = async (manager, count, monthKey) => {
+                if (!isAdminRole) return false;
                 const num = count === '' ? undefined : (parseInt(count, 10) || 0);
                 if (num !== undefined && (Number.isNaN(num) || num < 0)) {
                     return false;
@@ -3428,6 +3454,7 @@
                 await StorageUtils.setItem('sortConfig', newConfig);
             }, []);
             const toggleAgentDisabled = async (monthKey, manager) => {
+                if (!isAdminRole) return;
                 const monthDisabled = disabledAgents[monthKey] || [];
                 const isDisabled = monthDisabled.includes(manager);
                 let newDisabledAgents = { ...disabledAgents };
@@ -3453,6 +3480,7 @@
                 return (disabledAgents[monthKey] || []).includes(manager);
             }, [disabledAgents]);
             const exportData = () => {
+                if (!isAdminRole) return;
                 const data = {
                     ftdRecords: records,
                     penalties: penalties,
@@ -3480,6 +3508,7 @@
                 URL.revokeObjectURL(url);
             };
             const createBackup = async () => {
+                if (!isAdminRole) return;
                 const data = {
                     ftdRecords: records,
                     penalties: penalties,
@@ -3518,6 +3547,7 @@
                 return backupKey;
             };
             const importData = (file, onSuccess, onError) => {
+                if (!isAdminRole) return;
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
@@ -5239,13 +5269,19 @@
         const AttendanceTab = () => {
             const { attendance, plannedDays, managers, updateAttendance, getMonthKey, getWorkedDays, records, initialManagers } = useData();
             const { addNotification } = useNotification();
+            const { isAdmin, userDisplayName } = useUser();
             const [selectedMonth, setSelectedMonth] = useSelectedMonth();
             const [selectedManager, setSelectedManager] = useState(managers[0] || '');
+            
             useEffect(() => {
-                if (managers.length > 0 && !selectedManager) {
+                if (!isAdmin && userDisplayName && managers.includes(userDisplayName)) {
+                    setSelectedManager(userDisplayName);
+                    return;
+                }
+                if (isAdmin && managers.length > 0 && !selectedManager) {
                     setSelectedManager(managers[0]);
                 }
-            }, [managers, selectedManager]);
+            }, [isAdmin, userDisplayName, managers, selectedManager]);
             const monthKey = selectedMonth;
             const planned = plannedDays[monthKey] || 22;
             const worked = getWorkedDays(monthKey, selectedManager);
@@ -5376,6 +5412,26 @@
                                 ))}
                             </select>
                         </div>
+                        {!isAdmin ? (
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                            <label style={{
+                                fontWeight: '600',
+                                color: 'var(--text)',
+                                fontSize: '0.9rem',
+                                margin: 0
+                            }}>Менеджер:</label>
+                            <div style={{
+                                minWidth: '200px',
+                                padding: '0.75rem 1rem',
+                                background: 'var(--background)',
+                                border: '2px solid var(--border)',
+                                borderRadius: '8px',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                color: 'var(--text)'
+                            }}>{userDisplayName || '—'}</div>
+                        </div>
+                        ) : (
                         <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
                             <label style={{
                                 fontWeight: '600',
@@ -5405,6 +5461,7 @@
                                 {managers.map(m => <option key={m} value={m}>{m}</option>)}
                             </select>
                         </div>
+                        )}
                     </div>
                     <div className="bar-container">
                         {bar} {FormatUtils.formatDays(worked)}/{planned} дня
@@ -5503,6 +5560,7 @@
         const GeneralPlanTab = () => {
             const { records, penalties, bonuses, monthlyGoals, managers, initialManagers, initializeMonthGoals, addPenalty, deletePenalty, addBonus, deleteBonus, disabledAgents, tariffs, plannedDays, managerBaseRates, invalidBonusPerFTD, teamLeaderPerFTD, getWorkedDays, getActiveManagersForMonth, managerFilter } = useData();
             const { addNotification } = useNotification();
+            const { isAdmin } = useUser();
             const [selectedMonth, setSelectedMonth] = useSelectedMonth();
             const [penaltyForm, setPenaltyForm] = useState({
                 date: '',
@@ -5622,6 +5680,7 @@
                             }, [getActiveManagersForMonth, monthRecords, goals, initialManagers, selectedMonth, disabledAgents, managerFilter])}
                         </div>
                     </div>
+                    {isAdmin && (
                     <div className="section">
                         <h3>⛔ Штрафы</h3>
                         <form onSubmit={handlePenaltySubmit}>
@@ -5700,6 +5759,8 @@
                             </table>
                         </div>
                     </div>
+                    )}
+                    {isAdmin && (
                     <div className="section">
                         <h3>💰 Бонусы</h3>
                         <form onSubmit={handleBonusSubmit}>
@@ -5778,12 +5839,14 @@
                             </table>
                         </div>
                     </div>
+                    )}
                 </div>
             );
         };
         const DataEntryTab = () => {
             const { records, managers, trafficOptions, countryOptions, addRecord, deleteRecord, initializeMonthGoals, disabledAgents } = useData();
             const { addNotification } = useNotification();
+            const { isAdmin, userDisplayName } = useUser();
             const [form, setForm] = useState({
                 date: '',
                 manager: '',
@@ -5855,7 +5918,9 @@
                 const errors = {};
                 let isValid = true;
                 
-                const fieldsToValidate = ['date', 'manager', 'clientId', 'validity', 'traffic', 'country'];
+                const fieldsToValidate = isAdmin 
+                    ? ['date', 'manager', 'clientId', 'validity', 'traffic', 'country']
+                    : ['date', 'manager', 'clientId', 'validity'];
                 if (form.validity === 'invalid') {
                     fieldsToValidate.push('invalidReason');
                 }
@@ -5869,7 +5934,9 @@
                 });
                 
                 setFormErrors(errors);
-                const touchedFields = { date: true, manager: true, clientId: true, validity: true, traffic: true, country: true };
+                const touchedFields = isAdmin 
+                    ? { date: true, manager: true, clientId: true, validity: true, traffic: true, country: true }
+                    : { date: true, manager: true, clientId: true, validity: true };
                 if (form.validity === 'invalid') touchedFields.invalidReason = true;
                 setTouched(touchedFields);
                 return isValid;
@@ -5879,6 +5946,12 @@
                 initializeMonthGoals(selectedMonth);
                 setForm(prev => ({ ...prev, date: DateUtils.getTodayString() }));
             }, [selectedMonth, initializeMonthGoals]);
+            
+            useEffect(() => {
+                if (!isAdmin && userDisplayName && managers.includes(userDisplayName)) {
+                    setForm(prev => ({ ...prev, manager: userDisplayName }));
+                }
+            }, [isAdmin, userDisplayName, managers]);
             
             const monthRecords = useMemo(() => 
                 DateUtils.filterByMonth(records, selectedMonth), 
@@ -5898,7 +5971,7 @@
                 addRecord(form);
                 setForm({
                     date: DateUtils.getTodayString(),
-                    manager: '',
+                    manager: (!isAdmin && userDisplayName) ? userDisplayName : '',
                     clientId: '',
                     validity: '',
                     invalidReason: '',
@@ -5913,7 +5986,7 @@
                 setTouched({});
                 setClientSummary('');
                 addNotification('Запись добавлена', 'success');
-            }, [form, validateAllFields, addRecord, addNotification, trafficOptions, countryOptions]);
+            }, [form, validateAllFields, addRecord, addNotification, trafficOptions, countryOptions, isAdmin, userDisplayName]);
             const handleDeleteClick = useCallback((id) => {
                 setDeleteId(id);
                 setModalOpen(true);
@@ -6067,6 +6140,20 @@
                                 </div>
                                 <div className={`form-group ${touched.manager && formErrors.manager ? 'has-error' : ''}`}>
                                     <label>Менеджер: <span style={{ color: '#ef4444' }}>*</span></label>
+                                    {!isAdmin ? (
+                                        <div
+                                            className={`form-input ${form.manager && !formErrors.manager ? 'valid' : ''}`}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                background: 'var(--background)',
+                                                cursor: 'default',
+                                                fontWeight: '600'
+                                            }}
+                                        >
+                                            {userDisplayName || '—'}
+                                        </div>
+                                    ) : (
                                     <select
                                         value={form.manager}
                                         onChange={(e) => handleFieldChange('manager', e.target.value)}
@@ -6076,6 +6163,7 @@
                                         <option value="">Выберите менеджера</option>
                                         {managers.map(m => <option key={m} value={m}>{m}</option>)}
                                     </select>
+                                    )}
                                     {touched.manager && formErrors.manager && (
                                         <div className="validation-error">
                                             <span className="validation-error-icon">⚠️</span>
@@ -6142,6 +6230,7 @@
                                         )}
                                     </div>
                                 )}
+                                {isAdmin && (
                                 <div className={`form-group ${touched.traffic && formErrors.traffic ? 'has-error' : ''}`}>
                                     <label>Трафик: <span style={{ color: '#ef4444' }}>*</span></label>
                                     <select
@@ -6160,6 +6249,8 @@
                                         </div>
                                     )}
                                 </div>
+                                )}
+                                {isAdmin && (
                                 <div className={`form-group ${touched.country && formErrors.country ? 'has-error' : ''}`}>
                                     <label>Страна: <span style={{ color: '#ef4444' }}>*</span></label>
                                     <select
@@ -6178,9 +6269,10 @@
                                         </div>
                                     )}
                                 </div>
+                                )}
                             </div>
                             
-                            {/* КУС - Карточка учёта сделки */}
+                            {isAdmin && (
                             <div style={{ marginTop: '1rem' }}>
                                 <button 
                                     type="button"
@@ -6208,7 +6300,6 @@
                                             onChange={(e) => {
                                                 const newKus = e.target.value;
                                                 try {
-                                                    // Анализ цвета лида
                                                     if (typeof analyzeLeadColor === 'function') {
                                                         const result = analyzeLeadColor(newKus);
                                                         setForm({...form, kus: newKus, leadColor: result?.color || form.leadColor, leadColorReasons: result?.reasons || []});
@@ -6265,7 +6356,6 @@
                                     </div>
                                 )}
                                 
-                                {/* Цвет лида */}
                                 <div style={{ marginTop: '0.75rem' }}>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.9rem' }}>
                                         Портрет клиента:
@@ -6324,6 +6414,7 @@
                                     )}
                                 </div>
                             </div>
+                            )}
                             
                             <button type="submit" className="btn btn-primary btn-animated active-scale" style={{ marginTop: '1rem' }}>
                                 <span className="icon-bounce">➕</span> Добавить запись
@@ -6480,17 +6571,26 @@
             getWorkedDays,
             disabledAgents
         }) => {
+            const { isAdmin, userDisplayName } = useUser();
             const [selectedManager, setSelectedManager] = useState('');
             const [additionalValidFTD, setAdditionalValidFTD] = useState(0);
             const [additionalInvalidFTD, setAdditionalInvalidFTD] = useState(0);
             const [additionalWorkedDays, setAdditionalWorkedDays] = useState(0);
             const [isExpanded, setIsExpanded] = useState(false);
             
-            // Получаем активных менеджеров (без тим-лидера для простоты)
-            const salesManagers = useMemo(() => 
-                managers.filter(m => m !== TEAM_LEADER_NAME),
-                [managers]
-            );
+            const salesManagers = useMemo(() => {
+                let list = managers.filter(m => m !== TEAM_LEADER_NAME);
+                if (!isAdmin && userDisplayName) {
+                    list = list.filter(m => m === userDisplayName);
+                }
+                return list;
+            }, [managers, isAdmin, userDisplayName]);
+            
+            useEffect(() => {
+                if (!isAdmin && userDisplayName && salesManagers.includes(userDisplayName)) {
+                    setSelectedManager(userDisplayName);
+                }
+            }, [isAdmin, userDisplayName, salesManagers]);
             
             // Текущие данные выбранного менеджера
             const currentData = useMemo(() => {
@@ -6651,8 +6751,19 @@
                             {/* Выбор менеджера */}
                             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ fontWeight: '600', marginBottom: '0.5rem', display: 'block' }}>
-                                    👤 Выберите менеджера для симуляции:
+                                    {!isAdmin ? '👤 Симуляция для:' : '👤 Выберите менеджера для симуляции:'}
                                 </label>
+                                {!isAdmin ? (
+                                    <div style={{
+                                        padding: '0.75rem',
+                                        borderRadius: '8px',
+                                        border: '2px solid var(--border)',
+                                        minWidth: '250px',
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
+                                        background: 'var(--background)'
+                                    }}>{userDisplayName || '—'}</div>
+                                ) : (
                                 <select
                                     value={selectedManager}
                                     onChange={(e) => {
@@ -6672,6 +6783,7 @@
                                         <option key={m} value={m}>{m}</option>
                                     ))}
                                 </select>
+                                )}
                             </div>
                             
                             {selectedManager && currentData && simulatedData && (
@@ -7054,6 +7166,7 @@
 
         const StatisticsTab = () => {
             const { records, penalties, bonuses, monthlyGoals, tariffs, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, plannedDays, attendance, managers, initialManagers, managerBaseRates, managerTariffs, managerClientsCount, initializeMonthGoals, getWorkedDays, disabledAgents, getActiveManagersForMonth, managerFilter, countryOptions } = useData();
+            const { isAdmin, userDisplayName } = useUser();
             const [selectedMonth, setSelectedMonth] = useSelectedMonth();
             useEffect(() => {
                 initializeMonthGoals(selectedMonth);
@@ -7105,11 +7218,14 @@
                 if (managerFilter) {
                     salesManagers = salesManagers.filter(m => m === managerFilter);
                 }
+                if (!isAdmin && userDisplayName) {
+                    salesManagers = salesManagers.filter(m => m === userDisplayName);
+                }
                 return salesManagers.map(manager => ({
                     manager,
                     data: getManagerData(manager, config)
                 }));
-            }, [getActiveManagersForMonth, monthRecords, monthPenalties, monthBonuses, goals, plannedD, selectedMonth, initialManagers, totalValid, tariffs, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, managerBaseRates, managerTariffs, getWorkedDays, managerClientsCount, managers, managerFilter]);
+            }, [getActiveManagersForMonth, monthRecords, monthPenalties, monthBonuses, goals, plannedD, selectedMonth, initialManagers, totalValid, tariffs, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, managerBaseRates, managerTariffs, getWorkedDays, managerClientsCount, managers, managerFilter, isAdmin, userDisplayName]);
 
             const managerCountryStats = useMemo(() => {
                 const allManagersFromRecords = [...new Set(records.map(r => r.manager))];
@@ -7150,6 +7266,7 @@
                         <StatCard title="Конверсия" value={`${totalStats.conversion}%`} icon="📈" />
                         <StatCard title="Общая конверсия (валидные / клиенты)" value={overallConversionPercent !== null ? `${overallConversionPercent}%` : '—'} icon="👥" />
                     </div>
+                    {isAdmin && (
                     <div className="section">
                         <h3>🎨 Статистика по цветам лидов за {DateUtils.formatMonthWithYear(selectedMonth)}</h3>
                         <p style={CommonStyles.mutedText}>
@@ -7202,6 +7319,7 @@
                             </div>
                         </div>
                     </div>
+                    )}
                     <div className="section">
                         <h3>🎯 Прогресс по планам за {DateUtils.formatMonthWithYear(selectedMonth)}</h3>
                         <div style={CommonStyles.columnFlex}>
@@ -7262,6 +7380,7 @@
                         disabledAgents={disabledAgents}
                     />
                     
+                    {isAdmin && (
                     <div className="section">
                         <h3>📋 История выполнения планов</h3>
                         <div style={CommonStyles.columnFlex}>
@@ -7283,7 +7402,9 @@
                             }, [records, initialManagers, monthlyGoals])}
                         </div>
                     </div>
+                    )}
 
+                    {isAdmin && (
                     <div className="section">
                         <h3 style={{marginBottom: '0.25rem'}}>🌍 Депозиты по странам (менеджеры) — за всё время</h3>
                         <p style={{...CommonStyles.mutedText, marginBottom: '1.25rem'}}>
@@ -7437,20 +7558,44 @@
                             </div>
                         )}
                     </div>
+                    )}
                 </div>
             );
         };
         const MonthlyStatsTab = () => {
             const { records, penalties, bonuses, monthlyGoals, tariffs, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, plannedDays, attendance, managers, initialManagers, managerBaseRates, managerTariffs, managerClientsCount, initializeMonthGoals, getWorkedDays, disabledAgents, isAgentDisabled, getActiveManagersForMonth } = useData();
+            const { isAdmin, userDisplayName } = useUser();
             const [yearFilter, setYearFilter] = useState('2026');
             const [comparePrevious, setComparePrevious] = useState(false);
             
+            const scopeRecords = useMemo(() => {
+                if (isAdmin || !userDisplayName) return records;
+                return records.filter(r => r.manager === userDisplayName);
+            }, [records, isAdmin, userDisplayName]);
+            
+            const scopedPenalties = useMemo(() => {
+                const list = penalties || [];
+                if (isAdmin || !userDisplayName) return list;
+                return list.filter(p => p.manager === userDisplayName);
+            }, [penalties, isAdmin, userDisplayName]);
+            
+            const scopedBonuses = useMemo(() => {
+                const list = bonuses || [];
+                if (isAdmin || !userDisplayName) return list;
+                return list.filter(b => b.manager === userDisplayName);
+            }, [bonuses, isAdmin, userDisplayName]);
+            
+            const managersForScope = useMemo(() => {
+                if (isAdmin || !userDisplayName) return managers;
+                return managers.filter(m => m === userDisplayName);
+            }, [managers, isAdmin, userDisplayName]);
+            
             // Оптимизация: Фильтрация записей вынесена в отдельный useMemo
             const filteredRecords = useMemo(() => {
-                if (!yearFilter) return records;
+                if (!yearFilter) return scopeRecords;
                 const yearNum = parseInt(yearFilter, 10);
-                return records.filter(r => new Date(r.date).getFullYear() === yearNum);
-            }, [records, yearFilter]);
+                return scopeRecords.filter(r => new Date(r.date).getFullYear() === yearNum);
+            }, [scopeRecords, yearFilter]);
             
             // Оптимизация: Сбор месяцев без побочных эффектов
             const monthKeys = useMemo(() => {
@@ -7463,16 +7608,16 @@
                     keys.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
                 });
                 
-                if (penalties) {
-                    penalties.forEach(p => {
+                if (scopedPenalties) {
+                    scopedPenalties.forEach(p => {
                         const date = new Date(p.date);
                         if (yearFilterNum && date.getFullYear() !== yearFilterNum) return;
                         keys.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
                     });
                 }
                 
-                if (bonuses) {
-                    bonuses.forEach(b => {
+                if (scopedBonuses) {
+                    scopedBonuses.forEach(b => {
                         const date = new Date(b.date);
                         if (yearFilterNum && date.getFullYear() !== yearFilterNum) return;
                         keys.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
@@ -7480,7 +7625,7 @@
                 }
                 
                 return Array.from(keys);
-            }, [filteredRecords, penalties, bonuses, yearFilter]);
+            }, [filteredRecords, scopedPenalties, scopedBonuses, yearFilter]);
             
             // Инициализация целей месяцев вынесена в useEffect (побочный эффект)
             useEffect(() => {
@@ -7521,8 +7666,8 @@
                     }
                 });
                 
-                if (penalties) {
-                    penalties.forEach(p => {
+                if (scopedPenalties) {
+                    scopedPenalties.forEach(p => {
                         const date = new Date(p.date);
                         if (yearFilterNum && date.getFullYear() !== yearFilterNum) return;
                         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -7540,8 +7685,8 @@
                     });
                 }
                 
-                if (bonuses) {
-                    bonuses.forEach(b => {
+                if (scopedBonuses) {
+                    scopedBonuses.forEach(b => {
                         const date = new Date(b.date);
                         if (yearFilterNum && date.getFullYear() !== yearFilterNum) return;
                         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -7559,9 +7704,9 @@
                     });
                 }
                 
-                // Добавляем пустые данные для всех менеджеров
+                // Добавляем пустые данные для менеджеров (только в выбранной области: все или один юзер)
                 Object.keys(data).forEach(monthKey => {
-                    managers.forEach(manager => {
+                    managersForScope.forEach(manager => {
                         if (!data[monthKey].managers[manager]) {
                             data[monthKey].managers[manager] = { total: 0, valid: 0, invalid: 0 };
                         }
@@ -7580,12 +7725,12 @@
                         conversion: total > 0 ? MathUtils.roundToDecimals((valid / total) * 100, 1) : 0
                     };
                     const monthClients = managerClientsCount[monthKey] || {};
-                    const totalClients = managers.reduce((s, m) => s + (parseInt(monthClients[m], 10) || 0), 0);
+                    const totalClients = managersForScope.reduce((s, m) => s + (parseInt(monthClients[m], 10) || 0), 0);
                     data[monthKey].overallConversion = totalClients > 0 ? MathUtils.roundToDecimals((valid / totalClients) * 100, 1) : null;
                     data[monthKey].penaltiesSum = (data[monthKey].penalties || []).reduce((s, p) => s + (Math.abs(p.amount) || 0), 0);
                 });
                 return data;
-            }, [filteredRecords, penalties, bonuses, monthlyGoals, yearFilter, managers, managerClientsCount]);
+            }, [filteredRecords, scopedPenalties, scopedBonuses, monthlyGoals, yearFilter, managersForScope, managerClientsCount]);
             const sortedMonthKeys = useMemo(
                 () => Object.keys(monthlyData).sort().reverse(),
                 [monthlyData]
@@ -7593,10 +7738,14 @@
             const activeManagersByMonth = useMemo(() => {
                 const map = {};
                 sortedMonthKeys.forEach(monthKey => {
-                    map[monthKey] = getActiveManagersForMonth(monthKey).filter(manager => !isAgentDisabled(monthKey, manager));
+                    let list = getActiveManagersForMonth(monthKey).filter(manager => !isAgentDisabled(monthKey, manager));
+                    if (!isAdmin && userDisplayName) {
+                        list = list.filter(m => m === userDisplayName);
+                    }
+                    map[monthKey] = list;
                 });
                 return map;
-            }, [sortedMonthKeys, getActiveManagersForMonth, isAgentDisabled]);
+            }, [sortedMonthKeys, getActiveManagersForMonth, isAgentDisabled, isAdmin, userDisplayName]);
             // Оптимизация: getPreviousMonthData без побочных эффектов
             const getPreviousMonthData = useCallback((monthKey) => {
                 const date = new Date(monthKey + '-01');
@@ -7605,7 +7754,7 @@
                 const prevMonthNum = date.getMonth() + 1;
                 const prevMonthKey = `${prevYear}-${String(prevMonthNum).padStart(2, '0')}`;
                 const prevGoals = monthlyGoals[prevMonthKey] || {};
-                const prevRecords = records.filter(r => {
+                const prevRecords = scopeRecords.filter(r => {
                     const rDate = new Date(r.date);
                     return rDate.getFullYear() === prevYear && (rDate.getMonth() + 1) === prevMonthNum;
                 });
@@ -7624,16 +7773,16 @@
                     }
                 });
                 const prevStats = Calculator.calculateStats(prevRecords);
-                const prevPenalties = (penalties || []).filter(p => {
+                const prevPenalties = (scopedPenalties).filter(p => {
                     const pDate = new Date(p.date);
                     return pDate.getFullYear() === prevYear && (pDate.getMonth() + 1) === prevMonthNum;
                 });
-                const prevBonuses = (bonuses || []).filter(b => {
+                const prevBonuses = (scopedBonuses).filter(b => {
                     const bDate = new Date(b.date);
                     return bDate.getFullYear() === prevYear && (bDate.getMonth() + 1) === prevMonthNum;
                 });
                 return { monthKey: prevMonthKey, records: prevRecords, managers: prevManagers, stats: prevStats, goals: prevGoals, penalties: prevPenalties, bonuses: prevBonuses };
-            }, [records, penalties, bonuses, monthlyGoals]);
+            }, [scopeRecords, scopedPenalties, scopedBonuses, monthlyGoals]);
             const prevMonthDataMap = useMemo(() => {
                 if (!comparePrevious) return {};
                 const map = {};
@@ -7904,8 +8053,10 @@
         const TeamLeaderSalaryTab = () => {
             const { records, bonuses, monthlyGoals, managers, initialManagers, plannedDays, getWorkedDays, attendance, updateAttendance } = useData();
             const { addNotification } = useNotification();
+            const { isAdmin: isAdminUser } = useUser();
             const [selectedMonth, setSelectedMonth] = useSelectedMonth();
             const [isAuthorized, setIsAuthorized] = useState(() => {
+                if (isAdminUser) return true;
                 const stored = sessionStorage.getItem('teamLeaderSalaryAuthorized');
                 return stored === 'true';
             });
@@ -8692,7 +8843,9 @@
         const SettingsTab = () => {
             const { records, tariffs, monthlyGoals, plannedDays, managers, initialManagers, invalidBonusPerFTD, teamLeaderPerFTD, teamPlanBonusAmount, managerBaseRates, managerTariffs, managerClientsCount, updateTariff, resetTariffs, updateMonthlyGoal, initializeMonthGoals, updatePlannedDays, updateInvalidBonus, updateTeamLeaderPerFTD, updateTeamPlanBonusAmount, addManager, deleteManager, updateManagerBaseRate, updateManagerTariffs, updateManagerClientsCount, exportData, importData, disabledAgents, toggleAgentDisabled, isAgentDisabled, penalties, bonuses, attendance } = useData();
             const { addNotification } = useNotification();
+            const { isAdmin: isAdminUser } = useUser();
             const [isAuthorized, setIsAuthorized] = useState(() => {
+                if (isAdminUser) return true;
                 const stored = sessionStorage.getItem('settingsAuthorized');
                 return stored === 'true';
             });
@@ -9566,7 +9719,8 @@
             managers,
             trafficOptions,
             countryOptions,
-            initialManagers
+            initialManagers,
+            showRowActions
         }) => {
             return (
                 <tr key={record.id} className="table-row table-row-enter" style={{animationDelay: `${index * 0.1}s`}}>
@@ -9637,6 +9791,7 @@
                                                         📋 {record.kus ? '✓' : '+'}
                                                     </button>
                                                 </td>
+                                                {showRowActions && (
                                                 <td>
                                                     <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                                                         <button
@@ -9663,6 +9818,7 @@
                                                         </div>
                                                     )}
                                                 </td>
+                                                )}
                                             </>
                                         )}
                                     </tr>
@@ -9670,6 +9826,7 @@
         });
         
         const SortableTable = ({ onDelete, monthFilter }) => {
+            const { isAdmin } = useUser();
             const { records, sortConfig, setSortConfig, updateRecord, managers, initialManagers, trafficOptions, countryOptions, managerFilter: globalManagerFilter } = useData();
             const { addNotification } = useNotification();
             const [search, setSearch] = useState('');
@@ -9995,7 +10152,7 @@
                                     Страна
                                 </th>
                                 <th>КУС</th>
-                                <th>Действия</th>
+                                {isAdmin && <th>Действия</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -10016,6 +10173,7 @@
                                     trafficOptions={trafficOptions}
                                     countryOptions={countryOptions}
                                     initialManagers={initialManagers}
+                                    showRowActions={isAdmin}
                                 />
                             ))}
                         </tbody>
@@ -10134,7 +10292,7 @@
                                     </span>
                                 </div>
                                 
-                                {isKusEditing ? (
+                                {isAdmin && isKusEditing ? (
                                     <textarea
                                         value={kusEditText}
                                         onChange={(e) => setKusEditText(e.target.value)}
@@ -10164,7 +10322,9 @@
                                     }}>
                                         {kusRecord.kus || (
                                             <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                                                КУС не заполнен. Нажмите "Редактировать" чтобы добавить.
+                                                {isAdmin 
+                                                    ? 'КУС не заполнен. Нажмите «Редактировать», чтобы добавить.'
+                                                    : 'КУС не заполнен.'}
                                             </span>
                                         )}
                                     </div>
@@ -10176,7 +10336,7 @@
                                     marginTop: '1rem',
                                     justifyContent: 'flex-end'
                                 }}>
-                                    {isKusEditing ? (
+                                    {isAdmin && isKusEditing ? (
                                         <>
                                             <button 
                                                 className="btn btn-secondary"
@@ -10202,12 +10362,14 @@
                                             >
                                                 Закрыть
                                             </button>
+                                            {isAdmin && (
                                             <button 
                                                 className="btn btn-primary"
                                                 onClick={() => setIsKusEditing(true)}
                                             >
                                                 ✏️ Редактировать
                                             </button>
+                                            )}
                                         </>
                                     )}
                                 </div>
@@ -10309,7 +10471,7 @@
                     await new Promise(resolve => setTimeout(resolve, 300));
                     setIsExiting(true);
                     await new Promise(resolve => setTimeout(resolve, 400));
-                    onLogin();
+                    onLogin(username);
                 } else {
                     setError('Неверный логин или пароль');
                     setIsSubmitting(false);
@@ -10429,7 +10591,7 @@
             const [activeTab, setActiveTab] = useState('general-plan');
             const [isLoggedIn, setIsLoggedIn] = useState(false);
             const [isAppLoading, setIsAppLoading] = useState(true);
-            const { currentUser, logout: userLogout } = useUser();
+            const { currentUser, userRole, userDisplayName, isAdmin, logout: userLogout, restoreRole, restoreDisplayName } = useUser();
             const { 
                 records, 
                 monthlyGoals, 
@@ -10450,33 +10612,43 @@
                 setManagerFilter
             } = useData();
             
-            const tabs = useMemo(() => [
-                { id: 'general-plan', label: '🏆 Общий план', component: GeneralPlanTab },
-                { id: 'data-entry', label: 'Ввод данных', component: DataEntryTab },
-                { id: 'attendance', label: '📅 Посещаемость', component: AttendanceTab },
-                { id: 'statistics', label: 'Статистика', component: StatisticsTab },
-                { id: 'monthly-stats', label: 'По месяцам', component: MonthlyStatsTab },
-                { id: 'team-leader-salary', label: '💰 Зарплата тим-лидера', component: TeamLeaderSalaryTab },
-                { id: 'settings', label: '⚙️ Настройки', component: SettingsTab }
+            const allTabs = useMemo(() => [
+                { id: 'general-plan', label: '🏆 Общий план', component: GeneralPlanTab, roles: ['admin', 'user'] },
+                { id: 'data-entry', label: 'Ввод данных', component: DataEntryTab, roles: ['admin', 'user'] },
+                { id: 'attendance', label: '📅 Посещаемость', component: AttendanceTab, roles: ['admin', 'user'] },
+                { id: 'statistics', label: 'Статистика', component: StatisticsTab, roles: ['admin', 'user'] },
+                { id: 'monthly-stats', label: 'По месяцам', component: MonthlyStatsTab, roles: ['admin', 'user'] },
+                { id: 'team-leader-salary', label: '💰 Зарплата тим-лидера', component: TeamLeaderSalaryTab, roles: ['admin'] },
+                { id: 'settings', label: '⚙️ Настройки', component: SettingsTab, roles: ['admin'] }
             ], []);
+            
+            const tabs = useMemo(() => 
+                allTabs.filter(tab => tab.roles.includes(userRole)),
+            [allTabs, userRole]);
             
             useEffect(() => {
                 const loadAppData = async () => {
                     try {
-                        const [loadedActiveTab, loggedIn, loginTime] = await Promise.all([
+                        const [loadedActiveTab, loggedIn, loginTime, savedRole, savedDisplayName] = await Promise.all([
                             StorageUtils.getItem('activeTab', 'general-plan'),
                             StorageUtils.getItem('loggedIn', false),
-                            StorageUtils.getItem('loginTime', 0)
+                            StorageUtils.getItem('loginTime', 0),
+                            StorageUtils.getItem('userRole', 'user'),
+                            StorageUtils.getItem('userDisplayName', '')
                         ]);
                         
                         setActiveTab(loadedActiveTab);
                         
                         const twoHours = 2 * 60 * 60 * 1000;
                         if (loggedIn && Date.now() - loginTime < twoHours) {
+                            restoreRole(savedRole);
+                            restoreDisplayName(savedDisplayName);
                             setIsLoggedIn(true);
                         } else {
                             await StorageUtils.removeItem('loggedIn');
                             await StorageUtils.removeItem('loginTime');
+                            await StorageUtils.removeItem('userRole');
+                            await StorageUtils.removeItem('userDisplayName');
                             setIsLoggedIn(false);
                         }
                         
@@ -10496,6 +10668,8 @@
                     const timeout = setTimeout(async () => {
                         await StorageUtils.removeItem('loggedIn');
                         await StorageUtils.removeItem('loginTime');
+                        await StorageUtils.removeItem('userRole');
+                        await StorageUtils.removeItem('userDisplayName');
                         setIsLoggedIn(false);
                     }, twoHours);
                     return () => clearTimeout(timeout);
@@ -10510,17 +10684,26 @@
                     setActiveTab(tabs[0].id);
                     StorageUtils.setItem('activeTab', tabs[0].id);
                 }
-            }, [isLoggedIn, activeTab, tabs]);
+            }, [isLoggedIn, activeTab, tabs, userRole]);
             
-            const handleLogin = async () => {
+            const handleLogin = async (signedInLogin) => {
+                const rec = users[signedInLogin];
+                const roleForStorage = (rec && typeof rec === 'object' && rec.role) ? rec.role : 'user';
+                const displayForStorage = (rec && typeof rec === 'object' && rec.displayName)
+                    ? rec.displayName
+                    : signedInLogin;
                 await StorageUtils.setItem('loggedIn', true);
                 await StorageUtils.setItem('loginTime', Date.now());
+                await StorageUtils.setItem('userRole', roleForStorage);
+                await StorageUtils.setItem('userDisplayName', displayForStorage);
                 setIsLoggedIn(true);
             };
             
             const handleLogout = async () => {
                 await StorageUtils.removeItem('loggedIn');
                 await StorageUtils.removeItem('loginTime');
+                await StorageUtils.removeItem('userRole');
+                await StorageUtils.removeItem('userDisplayName');
                 userLogout();
                 setIsLoggedIn(false);
             };
@@ -10561,6 +10744,7 @@
                         <div className="header">
                             <h1 className="animate-scale-in">📊 FTD Statistics Tracker</h1>
                             <p className="animate-fade-in">Современная система учета статистики и расчета зарплат менеджеров</p>
+                            {isAdmin && (
                             <div
                                 style={{
                                     marginTop: '1rem',
@@ -10608,13 +10792,26 @@
                                     Все менеджеры
                                 </label>
                             </div>
-                            <button 
-                                className="btn btn-danger btn-animated active-scale" 
-                                style={{position: 'absolute', top: '1rem', right: '1rem'}} 
-                                onClick={handleLogout}
-                            >
-                                <span className="icon-bounce">🚪</span> Выход
-                            </button>
+                            )}
+                            <div style={{position: 'absolute', top: '1rem', right: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                                <span style={{
+                                    padding: '0.35rem 0.75rem',
+                                    borderRadius: '8px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: '600',
+                                    background: isAdmin ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                                    color: 'white',
+                                    border: isAdmin ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.3)'
+                                }}>
+                                    {isAdmin ? '👑 ' : '👤 '}{userDisplayName || (isAdmin ? 'Админ' : 'Пользователь')}
+                                </span>
+                                <button 
+                                    className="btn btn-danger btn-animated active-scale" 
+                                    onClick={handleLogout}
+                                >
+                                    <span className="icon-bounce">🚪</span> Выход
+                                </button>
+                            </div>
                         </div>
                         <div className="tabs">
                             {tabs.map(tab => (

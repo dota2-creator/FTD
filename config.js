@@ -3,10 +3,18 @@
 
 window.ENV_CONFIG = {
     // ==========================================
-    // ПОЛЬЗОВАТЕЛИ ДЛЯ ВХОДА (логин: пароль)
+    // ПОЛЬЗОВАТЕЛИ ДЛЯ ВХОДА (логин: { password, role, displayName })
+    // role: 'admin' — полный доступ | role: 'user' — без Настроек и зарплаты тимлида
+    // Чтобы сделать администратором: у нужного логина замените role на 'admin'
     // ==========================================
     users: {
-        '1': '1'
+        '1': { password: '1', role: 'admin', displayName: 'Администратор' },
+        'david_aliev': { password: 'DavAliev2026!', role: 'user', displayName: 'Давид Алиев' },
+        'eldar_amirov': { password: 'EldarFt2026!', role: 'user', displayName: 'Ельдар Амиров' },
+        'alexandr_burim': { password: 'AlexBurim2026!', role: 'user', displayName: 'Александр Бурим' },
+        'bayram_shcherbakov': { password: 'BayramSh2026!', role: 'user', displayName: 'Байрам Щербаков' },
+        'mark_baurzhanov': { password: 'MarkBau2026!', role: 'user', displayName: 'Марк Бауржанов' },
+        'alina_kunaeva': { password: 'AlinaKu2026!', role: 'user', displayName: 'Алина Кунаева' }
     },
 
     // Пароль для доступа к настройкам зарплаты тимлида и раздела «Настройки»
@@ -27,47 +35,31 @@ window.ENV_CONFIG = {
     TEAM_PLAN_BONUS_AMOUNT: 500,
     
     // ==========================================
-    // ОСНОВНЫЕ ТАРИФЫ
+    // ОСНОВНЫЕ ТАРИФЫ (единые условия для всех менеджеров)
+    // Диапазон — по количеству валидных FTD за период (min–max включительно)
     // ==========================================
     DEFAULT_TARIFFS: [
-        { min: 1, max: 4, baseRate: 800, bonusPerFTD: 55 },
-        { min: 5, max: 7, baseRate: 800, bonusPerFTD: 60 },
-        { min: 8, max: 12, baseRate: 900, bonusPerFTD: 70 },
-        { min: 13, max: 19, baseRate: 1200, bonusPerFTD: 90 },
-        { min: 20, max: 999, baseRate: 1500, bonusPerFTD: 120 }
+        { min: 0, max: 4, baseRate: 800, bonusPerFTD: 50 },
+        { min: 5, max: 7, baseRate: 1000, bonusPerFTD: 65 },
+        { min: 8, max: 12, baseRate: 1100, bonusPerFTD: 75 },
+        { min: 13, max: 15, baseRate: 1200, bonusPerFTD: 90 },
+        { min: 16, max: 19, baseRate: 1200, bonusPerFTD: 100 },
+        { min: 20, max: 999, baseRate: 1500, bonusPerFTD: 100 }
     ],
     
     // ==========================================
-    // ПРЕДУСТАНОВЛЕННЫЕ НАБОРЫ УСЛОВИЙ (пресеты)
+    // ПРЕДУСТАНОВЛЕННЫЙ НАБОР (один на всех — совпадает с DEFAULT_TARIFFS)
     // ==========================================
     MANAGER_TARIFF_PRESETS: {
         preset1: {
-            name: 'Вариант 1',
+            name: 'Единые условия',
             tariffs: [
-                { min: 1, max: 4, baseRate: 1000, bonusPerFTD: 55 },
-                { min: 5, max: 9, baseRate: 1100, bonusPerFTD: 60 },
-                { min: 10, max: 12, baseRate: 1200, bonusPerFTD: 70 },
-                { min: 13, max: 19, baseRate: 1300, bonusPerFTD: 90 },
-                { min: 20, max: 999, baseRate: 1500, bonusPerFTD: 120 }
-            ]
-        },
-        preset2: {
-            name: 'Вариант 2',
-            tariffs: [
-                { min: 1, max: 4, baseRate: 800, bonusPerFTD: 55 },
-                { min: 5, max: 7, baseRate: 800, bonusPerFTD: 60 },
-                { min: 8, max: 12, baseRate: 900, bonusPerFTD: 70 },
-                { min: 13, max: 19, baseRate: 1200, bonusPerFTD: 90 },
-                { min: 20, max: 999, baseRate: 1500, bonusPerFTD: 120 }
-            ]
-        },
-        preset3: {
-            name: 'Вариант 3',
-            tariffs: [
-                { min: 1, max: 2, baseRate: 500, bonusPerFTD: 25 },
-                { min: 3, max: 5, baseRate: 500, bonusPerFTD: 45 },
-                { min: 6, max: 7, baseRate: 500, bonusPerFTD: 65 },
-                { min: 8, max: 999, baseRate: 700, bonusPerFTD: 65 }
+                { min: 0, max: 4, baseRate: 800, bonusPerFTD: 50 },
+                { min: 5, max: 7, baseRate: 1000, bonusPerFTD: 65 },
+                { min: 8, max: 12, baseRate: 1100, bonusPerFTD: 75 },
+                { min: 13, max: 15, baseRate: 1200, bonusPerFTD: 90 },
+                { min: 16, max: 19, baseRate: 1200, bonusPerFTD: 100 },
+                { min: 20, max: 999, baseRate: 1500, bonusPerFTD: 100 }
             ]
         }
     },
@@ -75,7 +67,14 @@ window.ENV_CONFIG = {
     // ==========================================
     // МЕНЕДЖЕРЫ
     // ==========================================
-    DEFAULT_MANAGERS: ['Александр Литвинов'],
+    DEFAULT_MANAGERS: [
+        'Давид Алиев',
+        'Ельдар Амиров',
+        'Александр Бурим',
+        'Байрам Щербаков',
+        'Марк Бауржанов',
+        'Алина Кунаева'
+    ],
     INITIAL_MANAGERS: [],
     
     // ==========================================

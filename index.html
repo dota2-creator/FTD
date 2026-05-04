@@ -3185,6 +3185,7 @@
                 await StorageUtils.setItem('plannedDays', newPlanned);
             };
             const updateAttendance = async (monthKey, manager, dateStr, value) => {
+                if (!isAdminRole) return;
                 let newAttendance = { ...attendance };
                 if (!newAttendance[monthKey]) newAttendance[monthKey] = {};
                 if (!newAttendance[monthKey][manager]) newAttendance[monthKey][manager] = {};
@@ -3220,6 +3221,7 @@
                 await StorageUtils.setItem('managerFilter', manager);
             }, []);
             const addRecord = async (record) => {
+                if (!isAdminRole) return;
                 const now = new Date().toISOString();
                 const newRecord = { 
                     ...record, 
@@ -3244,11 +3246,13 @@
                 await StorageUtils.setItem('attendance', newAttendance);
             };
             const deleteRecord = async (id) => {
+                if (!isAdminRole) return;
                 const newRecords = records.filter(r => r.id !== id);
                 setRecords(newRecords);
                 await StorageUtils.setItem('ftdRecords', newRecords);
             };
             const updateRecord = async (id, updatedRecord) => {
+                if (!isAdminRole) return;
                 const now = new Date().toISOString();
                 const newRecords = records.map(r => (r.id === id ? { ...updatedRecord, id, modifiedAt: now, createdAt: r.createdAt || now } : r));
                 setRecords(newRecords);
@@ -10614,8 +10618,8 @@
             
             const allTabs = useMemo(() => [
                 { id: 'general-plan', label: '🏆 Общий план', component: GeneralPlanTab, roles: ['admin', 'user'] },
-                { id: 'data-entry', label: 'Ввод данных', component: DataEntryTab, roles: ['admin', 'user'] },
-                { id: 'attendance', label: '📅 Посещаемость', component: AttendanceTab, roles: ['admin', 'user'] },
+                { id: 'data-entry', label: 'Ввод данных', component: DataEntryTab, roles: ['admin'] },
+                { id: 'attendance', label: '📅 Посещаемость', component: AttendanceTab, roles: ['admin'] },
                 { id: 'statistics', label: 'Статистика', component: StatisticsTab, roles: ['admin', 'user'] },
                 { id: 'monthly-stats', label: 'По месяцам', component: MonthlyStatsTab, roles: ['admin', 'user'] },
                 { id: 'team-leader-salary', label: '💰 Зарплата тим-лидера', component: TeamLeaderSalaryTab, roles: ['admin'] },

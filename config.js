@@ -8,7 +8,7 @@ window.ENV_CONFIG = {
     // Чтобы сделать администратором: у нужного логина замените role на 'admin'
     // ==========================================
     users: {
-        '1': { password: '1', role: 'admin', displayName: 'Администратор' },
+        'admin': { password: 'teq107', role: 'admin', displayName: 'Администратор' },
         'david_aliev': { password: 'DavAliev2026!', role: 'user', displayName: 'Давид Алиев' },
         'eldar_amirov': { password: 'EldarFt2026!', role: 'user', displayName: 'Ельдар Амиров' },
         'alexandr_burim': { password: 'AlexBurim2026!', role: 'user', displayName: 'Александр Бурим' },

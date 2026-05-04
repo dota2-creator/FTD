@@ -2081,7 +2081,10 @@
         const DEFAULT_BASE_RATE = config.DEFAULT_BASE_RATE || 0;
         const DEFAULT_TARIFFS = config.DEFAULT_TARIFFS || [];
         const AVAILABLE_YEARS = config.AVAILABLE_YEARS || [];
-        const TEAM_LEADER_SALARY_PASSWORD = config.TEAM_LEADER_SALARY_PASSWORD || '';
+        // Пароль для экранов зарплаты тимлида и настроек: из config.TEAM_LEADER_SALARY_PASSWORD либо тот же, что у users.admin
+        const TEAM_LEADER_SALARY_PASSWORD = (typeof config.TEAM_LEADER_SALARY_PASSWORD === 'string' && config.TEAM_LEADER_SALARY_PASSWORD.length > 0)
+            ? config.TEAM_LEADER_SALARY_PASSWORD
+            : (users.admin && users.admin.password) || '';
         const DEFAULT_MANAGERS = config.DEFAULT_MANAGERS || [];
         const INITIAL_MANAGERS = config.INITIAL_MANAGERS || [];
         const INVALID_BONUS_PER_FTD = config.INVALID_BONUS_PER_FTD || 0;
